@@ -31,10 +31,14 @@ KOINLY_D_MAPPING = {
     "reward": TrType.AIRDROP,
     "Income": TrType.INCOME,
     "income": TrType.INCOME,
+    "Other income": TrType.INCOME,
+    "other_income": TrType.INCOME,
     "Loan interest": TrType.INTEREST,
     "loan_interest": TrType.INTEREST,
     "Staking": TrType.STAKING,
     "staking": TrType.STAKING,
+    "Realized gain": TrType.MARGIN_GAIN,
+    "realized_gain": TrType.MARGIN_GAIN,
 }
 
 KOINLY_W_MAPPING = {
@@ -49,6 +53,10 @@ KOINLY_W_MAPPING = {
     "donation": TrType.CHARITY_SENT,
     "Interest payment": TrType.SPEND,
     "interest_payment": TrType.SPEND,
+    "Realized gain": TrType.MARGIN_LOSS,
+    "realized_gain": TrType.MARGIN_LOSS,
+    "Margin Fee": TrType.MARGIN_FEE,
+    "margin_fee": TrType.MARGIN_FEE,
 }
 
 

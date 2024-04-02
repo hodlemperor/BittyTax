@@ -88,6 +88,7 @@ class OutputCsv(OutputBase):
         TrType.GIFT_RECEIVED: "Gift",
         TrType.FORK: "Fork",
         TrType.AIRDROP: "Airdrop",
+        TrType.MARGIN_GAIN: "MarginGain",
         TrType.REFERRAL: "Referral",
         TrType.CASHBACK: "Cashback",
         TrType.FEE_REBATE: "FeeRebate",
@@ -97,6 +98,8 @@ class OutputCsv(OutputBase):
         TrType.GIFT_SPOUSE: "Spouse",
         TrType.CHARITY_SENT: "Donation",
         TrType.LOST: "Lost",
+        TrType.MARGIN_LOSS: "MarginLoss",
+        TrType.MARGIN_FEE: "LendingFee",
         TrType.TRADE: "Trade",
     }
 
