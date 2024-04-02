@@ -593,6 +593,8 @@ DataParser(
     ],
     worksheet_name="Kucoin F",
     all_handler=parse_kucoin_futures,
+)
+
 # Account History_Funding Account (Bundle)
 DataParser(
     ParserType.EXCHANGE,
