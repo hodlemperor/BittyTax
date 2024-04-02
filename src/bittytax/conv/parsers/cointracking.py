@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from typing_extensions import Unpack
 
 from ...bt_types import TrType
+from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
@@ -19,7 +20,7 @@ WALLET = "CoinTracking"
 COINTRACKING_D_MAPPING = {
     "Income": TrType.INCOME,
     "Gift/Tip": TrType.GIFT_RECEIVED,
-    "Reward/Bonus": TrType.GIFT_RECEIVED,
+    "Reward/Bonus": TrType.AIRDROP,
     "Mining": TrType.MINING,
     "Airdrop": TrType.AIRDROP,
     "Staking": TrType.STAKING,
@@ -42,7 +43,9 @@ def parse_cointracking(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], dayfirst=True)
+    data_row.timestamp = DataParser.parse_timestamp(
+        row_dict["Date"], dayfirst=config.date_is_day_first
+    )
 
     if row_dict["Type"] == "Trade":
         data_row.t_record = TransactionOutRecord(

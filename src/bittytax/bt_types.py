@@ -14,8 +14,12 @@ class TrType(Enum):
     INTEREST = "Interest"
     DIVIDEND = "Dividend"
     GIFT_RECEIVED = "Gift-Received"
+    FORK = "Fork"
     AIRDROP = "Airdrop"
     MARGIN_GAIN = "Margin-Gain"
+    REFERRAL = "Referral"
+    CASHBACK = "Cashback"
+    FEE_REBATE = "Fee-Rebate"
     WITHDRAWAL = "Withdrawal"
     SPEND = "Spend"
     GIFT_SENT = "Gift-Sent"
@@ -44,8 +48,12 @@ BUY_TYPES = (
     TrType.DIVIDEND,
     TrType.INCOME,
     TrType.GIFT_RECEIVED,
+    TrType.FORK,
     TrType.AIRDROP,
     TrType.MARGIN_GAIN,
+    TrType.REFERRAL,
+    TrType.CASHBACK,
+    TrType.FEE_REBATE,
     TrType.TRADE,
 )
 
