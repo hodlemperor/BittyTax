@@ -13,42 +13,37 @@ if TYPE_CHECKING:
 
 WALLET = "Bitcoin Wallet"
 
-def parse_bitcoin_csv(data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]) -> None:
+def parse_bitcoin_csv(
+    data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
-    # Converti il timestamp in un formato compatibile
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Data"], tz=config.local_timezone)
     
-    # Assumi 'BTC' come asset se non specificato
     cryptoasset = kwargs.get("cryptoasset", "BTC")
     
-    # Converte l'importo da stringa a Decimal e determina la tipologia di transazione
     value = Decimal(row_dict["Importo (BTC)"])
     if value > 0:
-        buy_asset = cryptoasset
-        sell_asset = ""
-        transaction_type = TrType.DEPOSIT
         buy_quantity = value
         sell_quantity = None
+        transaction_type = TrType.DEPOSIT
     else:
-        buy_asset = ""
-        sell_asset = cryptoasset
-        transaction_type = TrType.WITHDRAWAL
         buy_quantity = None
-        sell_quantity = abs(value)  # Converti in valore positivo per i prelievi
-    
-    # Costruisci l'oggetto TransactionOutRecord, assicurandoti che non ci siano valori None
+        sell_quantity = abs(value)  # Assicurati che il valore sia positivo
+        transaction_type = TrType.WITHDRAWAL
+
     data_row.t_record = TransactionOutRecord(
-        tr_type=TrType.DEPOSIT if value > 0 else TrType.WITHDRAWAL,  # Usa tr_type anziché transaction_type
-        timestamp=data_row.timestamp,
-        buy_quantity=value if value > 0 else None,
-        sell_quantity=None if value > 0 else value,
-        buy_asset=buy_asset,
-        sell_asset=sell_asset,
+        transaction_type,
+        data_row.timestamp,
+        buy_quantity=buy_quantity,
+        sell_quantity=sell_quantity,
+        buy_asset=cryptoasset if buy_quantity is not None else "",
+        sell_asset=cryptoasset if sell_quantity is not None else "",
+        fee_quantity=None,  # Aggiungi logica per la quantità della commissione se necessario
+        fee_asset=cryptoasset if sell_quantity is not None else "",
         wallet=WALLET,
         note=row_dict.get("Etichetta", "")
     )
 
-# Esempio di registrazione del parser
 DataParser(
     ParserType.WALLET,
     "Bitcoin Wallet",
