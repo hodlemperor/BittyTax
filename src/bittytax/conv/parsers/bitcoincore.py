@@ -38,14 +38,14 @@ def parse_bitcoin_csv(data_row: "DataRow", _parser: DataParser, **kwargs: Unpack
     
     # Costruisci l'oggetto TransactionOutRecord, assicurandoti che non ci siano valori None
     data_row.t_record = TransactionOutRecord(
-        transaction_type=transaction_type,
+        tr_type=TrType.DEPOSIT if value > 0 else TrType.WITHDRAWAL,  # Usa tr_type anziché transaction_type
         timestamp=data_row.timestamp,
-        buy_quantity=buy_quantity,
-        sell_quantity=sell_quantity,
+        buy_quantity=value if value > 0 else None,
+        sell_quantity=None if value > 0 else value,
         buy_asset=buy_asset,
         sell_asset=sell_asset,
         wallet=WALLET,
-        note=row_dict.get("Etichetta", "")  # Usa get per evitare KeyError e fornire un valore di default
+        note=row_dict.get("Etichetta", "")
     )
 
 # Esempio di registrazione del parser
