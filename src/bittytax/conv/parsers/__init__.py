@@ -4,6 +4,7 @@ from . import (
     barclays,
     binance,
     binance_us,
+    bitcoincore,
     bitfinex,
     bitpanda,
     bitstamp,
