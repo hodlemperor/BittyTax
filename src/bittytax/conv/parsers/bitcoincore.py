@@ -11,45 +11,45 @@ from ..out_record import TransactionOutRecord
 if TYPE_CHECKING:
     from ..datarow import DataRow
 
-WALLET = "Bitcoin Core"
-
+WALLET = "Bitcoin Wallet"
 
 def parse_bitcoin_csv(
     data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    # Adattamento per gestire il formato di data nel CSV
+    # Converte il formato della data da ISO 8601 a timestamp UNIX, adattandolo al fuso orario locale
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Data"], tz=config.local_timezone)
-
-    # Gestione dell'importo e determinazione se è un deposito o un prelievo
+    
+    # Assume 'BTC' come cryptoasset se non specificato
+    cryptoasset = kwargs.get("cryptoasset", "BTC")
+    
+    # Converte il valore da stringa a Decimal
     value = Decimal(row_dict["Importo (BTC)"])
+    
+    # Determina il tipo di transazione basandosi sull'importo
     if value > 0:
-        data_row.t_record = TransactionOutRecord(
-            TrType.DEPOSIT,
-            data_row.timestamp,
-            buy_quantity=value,
-            buy_asset="BTC",
-            wallet=WALLET,
-            note=row_dict["Etichetta"],
-        )
+        transaction_type = TrType.DEPOSIT
     else:
-        # Assumiamo che non ci siano commissioni separate nel file CSV fornito
-        data_row.t_record = TransactionOutRecord(
-            TrType.WITHDRAWAL,
-            data_row.timestamp,
-            sell_quantity=abs(value),
-            sell_asset="BTC",
-            wallet=WALLET,
-            note=row_dict["Etichetta"],
-        )
+        transaction_type = TrType.WITHDRAWAL
+        value = abs(value)  # Per le transazioni di tipo WITHDRAWAL, convertiamo il valore in positivo
 
-# Esempio di come registrare il parser nel sistema
+    # Crea l'oggetto TransactionOutRecord con i dati pertinenti
+    data_row.t_record = TransactionOutRecord(
+        transaction_type,
+        data_row.timestamp,
+        buy_quantity=value if transaction_type == TrType.DEPOSIT else None,
+        sell_quantity=value if transaction_type == TrType.WITHDRAWAL else None,
+        buy_asset=cryptoasset if transaction_type == TrType.DEPOSIT else None,
+        sell_asset=cryptoasset if transaction_type == TrType.WITHDRAWAL else None,
+        wallet=WALLET,
+        note=row_dict["Etichetta"],
+    )
+
+# Esempio di registrazione del parser
 DataParser(
     ParserType.WALLET,
     "Bitcoin Wallet",
-    [
-        "ID", "Etichetta", "Confermato", "Importo (BTC)", "Data"
-    ],
+    ["Confermato", "Data", "Tipo", "Etichetta", "Indirizzo", "Importo (BTC)", "ID"],
     worksheet_name="Bitcoin Transactions",
     row_handler=parse_bitcoin_csv,
 )
