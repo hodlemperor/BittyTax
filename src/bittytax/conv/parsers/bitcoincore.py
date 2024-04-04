@@ -17,32 +17,37 @@ def parse_bitcoin_csv(
     data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    # Converte il formato della data da ISO 8601 a timestamp UNIX, adattandolo al fuso orario locale
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Data"], tz=config.local_timezone)
     
-    # Assume 'BTC' come cryptoasset se non specificato
+    # Assumi 'BTC' come cryptoasset se non specificato
     cryptoasset = kwargs.get("cryptoasset", "BTC")
     
-    # Converte il valore da stringa a Decimal
+    # Converte l'importo da stringa a Decimal
     value = Decimal(row_dict["Importo (BTC)"])
     
-    # Determina il tipo di transazione basandosi sull'importo
+    # Determina il tipo di transazione e assicurati che buy_asset e sell_asset non siano mai None
     if value > 0:
         transaction_type = TrType.DEPOSIT
+        buy_asset = cryptoasset
+        sell_asset = ""  # Usa una stringa vuota invece di None
     else:
         transaction_type = TrType.WITHDRAWAL
-        value = abs(value)  # Per le transazioni di tipo WITHDRAWAL, convertiamo il valore in positivo
+        value = abs(value)  # Assicurati che il valore sia positivo per i prelievi
+        buy_asset = ""
+        sell_asset = cryptoasset
 
-    # Crea l'oggetto TransactionOutRecord con i dati pertinenti
+    # Nota: Se 'Etichetta' potrebbe essere None, considera anche di gestirla in modo simile
+    note = row_dict["Etichetta"] if row_dict["Etichetta"] else ""
+
     data_row.t_record = TransactionOutRecord(
         transaction_type,
         data_row.timestamp,
         buy_quantity=value if transaction_type == TrType.DEPOSIT else None,
         sell_quantity=value if transaction_type == TrType.WITHDRAWAL else None,
-        buy_asset=cryptoasset if transaction_type == TrType.DEPOSIT else None,
-        sell_asset=cryptoasset if transaction_type == TrType.WITHDRAWAL else None,
+        buy_asset=buy_asset,
+        sell_asset=sell_asset,
         wallet=WALLET,
-        note=row_dict["Etichetta"],
+        note=note,
     )
 
 # Esempio di registrazione del parser
