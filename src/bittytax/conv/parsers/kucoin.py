@@ -1,15 +1,20 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2020
 
-import re
-from decimal import Decimal
-from typing import TYPE_CHECKING
 
+import copy
+import re
+import sys
+from decimal import Decimal
+from typing import TYPE_CHECKING, List
+
+from colorama import Fore
 from typing_extensions import Unpack
 
 from ...bt_types import TrType
+from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
-from ..exceptions import DataFormatNotSupported, UnexpectedTypeError
+from ..exceptions import DataFormatNotSupported, DataRowError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -253,11 +258,9 @@ def parse_kucoin_deposits_withdrawals_v2(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-
     if parser.args:
         timestamp_hdr = parser.args[0].group(1)
         utc_offset = parser.args[0].group(2)
-
     data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
 
     if row_dict["Status"] != "SUCCESS":
@@ -293,7 +296,6 @@ def parse_kucoin_staking_income(
     if parser.args:
         timestamp_hdr = parser.args[0].group(1)
         utc_offset = parser.args[0].group(2)
-
     data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
 
     data_row.t_record = TransactionOutRecord(
@@ -304,6 +306,74 @@ def parse_kucoin_staking_income(
         wallet=WALLET,
     )
 
+def parse_kucoin_futures(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    for row_index, data_row in enumerate(data_rows):
+        if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
+            sys.stderr.write(
+                f"{Fore.YELLOW}conv: "
+                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
+            )
+
+        if data_row.parsed:
+            continue
+
+        try:
+            _parse_kucoin_futures_row(data_rows, parser, data_row, row_index)
+        except DataRowError as e:
+            data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
+
+
+def _parse_kucoin_futures_row(
+    data_rows: List["DataRow"],
+    parser: DataParser,
+    data_row: "DataRow",
+    row_index: int,
+) -> None:
+    row_dict = data_row.row_dict
+    timestamp_hdr = parser.args[1].group(1)
+    utc_offset = parser.args[1].group(2)
+    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
+    data_row.parsed = True
+
+    if Decimal(row_dict["Realized PNL"]) > 0:
+        data_row.t_record = TransactionOutRecord(
+            TrType.MARGIN_GAIN,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Realized PNL"]),
+            buy_asset="USDT",
+            wallet=WALLET,
+        )
+    else:
+        data_row.t_record = TransactionOutRecord(
+            TrType.MARGIN_LOSS,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Realized PNL"])),
+            sell_asset="USDT",
+            wallet=WALLET,
+        )
+
+    if Decimal(row_dict["Total Funding Fees"]) + Decimal(row_dict["Total Trading Fees"]) > 0:
+        dup_data_row = copy.copy(data_row)
+        dup_data_row.row = []
+        dup_data_row.t_record = TransactionOutRecord(
+            TrType.MARGIN_FEE,
+            data_row.timestamp,
+            sell_quantity=Decimal(row_dict["Total Funding Fees"])
+            + Decimal(row_dict["Total Trading Fees"]),
+            sell_asset="USDT",
+            wallet=WALLET,
+        )
+        data_rows.insert(row_index + 1, dup_data_row)
 
 # This parser is only used for Airdrops, everything else is duplicates
 def parse_kucoin_account_history_funding(
@@ -499,6 +569,27 @@ DataParser(
     ],
     worksheet_name="KuCoin S",
     row_handler=parse_kucoin_staking_income,
+)
+
+
+# Futures Orders_Realized PNL (Bundle)
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Bundle Futures Orders Realized PNL",
+    [
+        "UID",
+        "Account Type",
+        "Symbol",
+        "Close Type",
+        "Realized PNL",
+        "Total Realized PNL",
+        "Total Funding Fees",
+        "Total Trading Fees",
+        lambda c: re.match(r"(^Position Opening Time\((UTC[-+]\d{2}:\d{2})\))", c),
+        lambda c: re.match(r"(^Position Closing Time\((UTC[-+]\d{2}:\d{2})\))", c),
+    ],
+    worksheet_name="Kucoin F",
+    all_handler=parse_kucoin_futures,
 )
 
 # Account History_Funding Account (Bundle)

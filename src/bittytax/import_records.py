@@ -363,6 +363,7 @@ class TransactionRow:
             fee_value=FieldRequired.OPTIONAL,
         ),
         TrType.REFERRAL: FieldValidation(
+        TrType.MARGIN_GAIN: FieldValidation(
             t_type=FieldRequired.MANDATORY,
             buy_quantity=FieldRequired.MANDATORY,
             buy_asset=FieldRequired.MANDATORY,
@@ -459,6 +460,30 @@ class TransactionRow:
             fee_value=FieldRequired.OPTIONAL,
         ),
         TrType.LOST: FieldValidation(
+            t_type=FieldRequired.MANDATORY,
+            buy_quantity=FieldRequired.NOT_REQUIRED,
+            buy_asset=FieldRequired.NOT_REQUIRED,
+            buy_value=FieldRequired.NOT_REQUIRED,
+            sell_quantity=FieldRequired.MANDATORY,
+            sell_asset=FieldRequired.MANDATORY,
+            sell_value=FieldRequired.OPTIONAL,
+            fee_quantity=FieldRequired.NOT_REQUIRED,
+            fee_asset=FieldRequired.NOT_REQUIRED,
+            fee_value=FieldRequired.NOT_REQUIRED,
+        ),
+        TrType.MARGIN_LOSS: FieldValidation(
+            t_type=FieldRequired.MANDATORY,
+            buy_quantity=FieldRequired.NOT_REQUIRED,
+            buy_asset=FieldRequired.NOT_REQUIRED,
+            buy_value=FieldRequired.NOT_REQUIRED,
+            sell_quantity=FieldRequired.MANDATORY,
+            sell_asset=FieldRequired.MANDATORY,
+            sell_value=FieldRequired.OPTIONAL,
+            fee_quantity=FieldRequired.NOT_REQUIRED,
+            fee_asset=FieldRequired.NOT_REQUIRED,
+            fee_value=FieldRequired.NOT_REQUIRED,
+        ),
+        TrType.MARGIN_FEE: FieldValidation(
             t_type=FieldRequired.MANDATORY,
             buy_quantity=FieldRequired.NOT_REQUIRED,
             buy_asset=FieldRequired.NOT_REQUIRED,

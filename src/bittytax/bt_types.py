@@ -19,13 +19,25 @@ class TrType(Enum):
     REFERRAL = "Referral"
     CASHBACK = "Cashback"
     FEE_REBATE = "Fee-Rebate"
+    MARGIN_GAIN = "Margin-Gain"
     WITHDRAWAL = "Withdrawal"
     SPEND = "Spend"
     GIFT_SENT = "Gift-Sent"
     GIFT_SPOUSE = "Gift-Spouse"
     CHARITY_SENT = "Charity-Sent"
     LOST = "Lost"
+    MARGIN_LOSS = "Margin-Loss"
+    MARGIN_FEE = "Margin-Fee"
     TRADE = "Trade"
+
+
+class DisposalType(Enum):
+    SAME_DAY = "Same Day"
+    TEN_DAY = "Ten Day"
+    BED_AND_BREAKFAST = "Bed & Breakfast"
+    SECTION_104 = "Section 104"
+    UNPOOLED = "Unpooled"
+    NO_GAIN_NO_LOSS = "No Gain/No Loss"
 
 
 BUY_TYPES = (
@@ -41,6 +53,7 @@ BUY_TYPES = (
     TrType.REFERRAL,
     TrType.CASHBACK,
     TrType.FEE_REBATE,
+    TrType.MARGIN_GAIN,
     TrType.TRADE,
 )
 
@@ -51,6 +64,8 @@ SELL_TYPES = (
     TrType.GIFT_SPOUSE,
     TrType.CHARITY_SENT,
     TrType.LOST,
+    TrType.MARGIN_LOSS,
+    TrType.MARGIN_FEE,
     TrType.TRADE,
 )
 
