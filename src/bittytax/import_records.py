@@ -362,7 +362,6 @@ class TransactionRow:
             fee_asset=FieldRequired.OPTIONAL,
             fee_value=FieldRequired.OPTIONAL,
         ),
-        TrType.REFERRAL: FieldValidation(
         TrType.MARGIN_GAIN: FieldValidation(
             t_type=FieldRequired.MANDATORY,
             buy_quantity=FieldRequired.MANDATORY,
