@@ -303,6 +303,36 @@ def _do_export(transaction_records: List[TransactionRecord]) -> None:
     TransactionHistory(transaction_records, value_asset)
     ExportRecords(transaction_records).write_csv()
 
+def calcola_saldo_annuale(transazioni, anno):
+    saldo = {}
+    for transazione in transazioni:
+        data = transazione.timestamp
+        if data.year == anno and data.month == 12 and data.day == 31:
+            asset = transazione.asset
+            quantita = transazione.quantity
+            if asset in saldo:
+                saldo[asset] += quantita
+            else:
+                saldo[asset] = quantita
+    return saldo
+
+
+def calcola_giacenza_media(transazioni, anno):
+    giacenza = {}
+    giorni_totali = 365
+    for transazione in transazioni:
+        data = transazione.timestamp
+        if data.year == anno:
+            asset = transazione.asset
+            quantita = transazione.quantity
+            if asset not in giacenza:
+                giacenza[asset] = {'quantita_totale': 0, 'giorni': 0}
+            giacenza[asset]['quantita_totale'] += quantita
+            giacenza[asset]['giorni'] += 1
+    giacenza_media = {asset: dati['quantita_totale'] / giorni_totali for asset, dati in giacenza.items()}
+    return giacenza_media
+
+
 
 if __name__ == "__main__":
     main()
