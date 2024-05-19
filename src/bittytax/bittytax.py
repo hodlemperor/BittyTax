@@ -130,6 +130,14 @@ def main() -> None:
 
     audit = AuditRecords(transaction_records)
 
+    # Nuovo codice per calcolare il saldo annuale e la giacenza media
+    anno = 2023  # Sostituisci con l'anno desiderato
+    saldo_annuale = calcola_saldo_annuale(transaction_records, anno)
+    giacenza_media = calcola_giacenza_media(transaction_records, anno)
+
+    print(f"Saldo annuale al 31/12/{anno}: {saldo_annuale}")
+    print(f"Giacenza media per {anno}: {giacenza_media}")
+
     if args.audit_only:
         if args.nopdf:
             ReportLog(args, audit)
@@ -145,7 +153,6 @@ def main() -> None:
 
             if not args.summary_only:
                 tax.process_income()
-                tax.process_margin_trades()
 
             _do_each_tax_year(tax, args.tax_year, args.summary_only, value_asset)
 
@@ -163,6 +170,7 @@ def main() -> None:
                 value_asset.price_report,
                 tax.holdings_report,
             )
+
 
 
 def _validate_year(value: str) -> int:
