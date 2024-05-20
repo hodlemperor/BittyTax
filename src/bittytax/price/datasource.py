@@ -8,6 +8,7 @@ import platform
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
+import time
 
 import dateutil.parser
 import requests
@@ -487,6 +488,9 @@ class CoinGecko(DataSourceBase):
     ) -> Optional[Decimal]:
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
+
+        time.sleep(15)
+        print(f"Sleeping..")
 
         json_resp = self.get_json(
             f"https://api.coingecko.com/api/v3/coins/{asset_id}?localization=false"
