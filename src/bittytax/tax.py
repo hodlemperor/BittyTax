@@ -153,6 +153,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         TrType.CHARITY_SENT,
         TrType.LOST,
         TrType.SWAP,
+        TrType.CRYPTO_CRYPTO,
     )
 
     MARGIN_TYPES = (TrType.MARGIN_GAIN, TrType.MARGIN_LOSS, TrType.MARGIN_FEE)
