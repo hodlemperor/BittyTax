@@ -3,12 +3,14 @@
 
 from decimal import Decimal
 
+from datetime import datetime, timedelta
 from colorama import Fore
 from tqdm import tqdm
 
 from .bt_types import AssetSymbol
 from .config import config
 from .constants import WARNING
+
 
 
 class Holdings:
@@ -20,11 +22,21 @@ class Holdings:
         self.withdrawals = 0
         self.deposits = 0
         self.mismatches = 0
+        self.balance_history = [(None, Decimal(0))]  # (timestamp, saldo)
 
-    def add_tokens(self, quantity: Decimal, cost: Decimal, fees: Decimal, is_deposit: bool) -> None:
+    def _update_balance_history(self, new_quantity: Decimal, transaction_date: datetime):
+        if self.balance_history[-1][0] is None:
+            self.balance_history[-1] = (transaction_date.date(), new_quantity)
+        else:
+            last_quantity = self.balance_history[-1][1]
+            if new_quantity != last_quantity:
+                self.balance_history.append((transaction_date.date(), new_quantity))
+
+    def add_tokens(self, quantity: Decimal, cost: Decimal, fees: Decimal, is_deposit: bool, transaction_date: datetime) -> None:
         self.quantity += quantity
         self.cost += cost
         self.fees += fees
+        self._update_balance_history(self.quantity, transaction_date)
 
         if is_deposit:
             self.deposits += 1
@@ -40,11 +52,12 @@ class Holdings:
             )
 
     def subtract_tokens(
-        self, quantity: Decimal, cost: Decimal, fees: Decimal, is_withdrawal: bool
+        self, quantity: Decimal, cost: Decimal, fees: Decimal, is_withdrawal: bool, transaction_date: datetime
     ) -> None:
         self.quantity -= quantity
         self.cost -= cost
         self.fees -= fees
+        self._update_balance_history(self.quantity, transaction_date)
 
         if is_withdrawal:
             self.withdrawals += 1
@@ -66,3 +79,25 @@ class Holdings:
                 f"({self.withdrawals}:{self.deposits}) for {self.asset}, cost basis will be wrong"
             )
             self.mismatches += 1
+
+    def get_balance_at_date(self, target_date: datetime.date) -> Decimal:
+        # Returns the balance as of the most recent date before or equal to `target_date`
+        for date, balance in reversed(self.balance_history):
+            if date <= target_date:
+                return balance
+        return Decimal(0)  # If there are no previous dates
+
+    def calculate_average_balance(self, start_date: datetime.date, end_date: datetime.date) -> Decimal:
+        current_date = start_date
+        total_balance = Decimal(0)
+        day_count = 0
+
+        while current_date <= end_date:
+            total_balance += self.get_balance_at_date(current_date)
+            current_date += timedelta(days=1)
+            day_count += 1
+
+        # Average annual asset balance
+        if day_count > 0:
+            return total_balance / Decimal(day_count)
+        return Decimal(0)
