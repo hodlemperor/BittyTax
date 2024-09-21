@@ -118,6 +118,7 @@ class ReportPdf:
                     "price_report": price_report,
                     "holdings_report": holdings_report,
                     "yearly_holdings_report": yearly_holdings_report,
+                    "matching_method": config.matching_method,
                 }
             )
 
