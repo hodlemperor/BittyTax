@@ -113,6 +113,7 @@ class ReportPdf:
                     "tax_report": tax_report,
                     "price_report": price_report,
                     "holdings_report": holdings_report,
+                    "matching_method": config.matching_method,
                 }
             )
 
