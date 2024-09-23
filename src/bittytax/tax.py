@@ -850,9 +850,17 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         consecutive_working_days = 0
         days_above_threshold = []
         exceeded_threshold = False
+        missing_prices = []
 
-        # Iterate on every day of the year
-        current_date = start_date
+        # Separare current_date in datetime e date
+        current_datetime = datetime.combine(start_date, time.min)
+        current_datetime = current_datetime.replace(tzinfo=timezone.utc)
+        current_date = current_datetime.date()  # Solo la data, senza il tempo
+
+        # Convertire end_date in datetime
+        end_datetime = datetime.combine(end_date, time.min)
+        end_datetime = end_datetime.replace(tzinfo=timezone.utc)
+
         while current_date <= end_date:
             # Consider only working days (Mon-Fri)
             if current_date.weekday() < 5:  # Monday = 0, ..., Friday = 4
@@ -861,10 +869,14 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 for asset, holding in self.holdings.items():
                     # Get the balance for that date
                     quantity = holding.get_balance_at_date(current_date)
-                    price_at_date, _, _ = value_asset.get_historical_price(asset, current_date)
+                    price_at_date, _, _ = value_asset.get_historical_price(asset, current_datetime)
 
                     # Add the total value
-                    current_value += quantity * price_at_date
+                    if price_at_date is not None:
+                        current_value += quantity * price_at_date
+                    else:
+                        print(f"Warning: price_at_date is None for asset {asset} on {current_date}")
+                        missing_prices.append((asset, current_date))
             
                 # Check if the value exceeds the threshold
                 if current_value >= threshold:
@@ -880,10 +892,11 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     break
 
             # Skip to the next day
-            current_date += timedelta(days=1)
+            current_datetime += timedelta(days=1)
+            current_date = current_datetime.date()
 
         # Save the report in yearly holdings report
-        self._save_threshold_in_yearly_report(exceeded_threshold, days_above_threshold, consecutive_working_days)
+        self._save_threshold_in_yearly_report(exceeded_threshold, days_above_threshold, consecutive_working_days, missing_prices)
         return exceeded_threshold  # Return whether the threshold was exceeded or not
 
     def _save_threshold_in_yearly_report(self, exceeded_threshold: bool, days_above_threshold: List[date], consecutive_working_days: int) -> None:

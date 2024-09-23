@@ -4,7 +4,9 @@
 
 <h1>Tax Summary (italy)</h1>
 
-<h2>{{ config.format_tax_year(tax_year) }} - {{ config.get_tax_year_start(tax_year)|format_date("%d/%m") }} to {{ config.get_tax_year_end(tax_year)|format_date("%d/%m") }}</h2>
+<h4>{{ config.get_tax_year_start(tax_year)|format_date("%d/%m") }} to {{ config.get_tax_year_end(tax_year)|format_date("%d/%m") }}</h4>
+<h2>{{ config.format_tax_year(tax_year) }}</h2>
+
 <h3>Capital Gain</h3>
 
     {% set short_term_totals = cgains['short_term_totals'] %}
@@ -47,6 +49,17 @@
     <li>{{ day | format_date("%d-%m-%Y") }}</li>
     {% endfor %}
 </ul>
+{% endif %}
+
+{% if yearly_holdings_report[tax_year].threshold_report.missing_prices|length > 0 %}
+<div style="color: orange;">
+    <strong>Notice:</strong> The following assets had missing prices, so their value could not be calculated:
+    <ul>
+        {% for asset, date in yearly_holdings_report[tax_year].threshold_report.missing_prices %}
+        <li>{{ asset }} on {{ date | format_date("%d-%m-%Y") }}</li>
+        {% endfor %}
+    </ul>
+</div>
 {% endif %}
 
 <table repeat="1" width="100%" class="asset-table">

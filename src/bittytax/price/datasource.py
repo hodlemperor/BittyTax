@@ -72,14 +72,40 @@ class DataSourceBase:
     def get_json(self, url: str) -> Any:
         if config.debug:
             print(f"{Fore.YELLOW}price: GET {url} {list(self.headers.keys())}")
-
-        response = requests.get(url, headers=self.headers, timeout=self.TIME_OUT)
-
-        if response.status_code in [401, 402, 403, 429, 502, 503, 504]:
+    
+        try:
+            response = requests.get(url, headers=self.headers, timeout=self.TIME_OUT)
+        
             response.raise_for_status()
 
-        if response:
-            return response.json()
+            if response:
+                return response.json()
+    
+        except requests.exceptions.HTTPError as http_err:
+            if response.status_code == 401:
+                print(f"Error 401: Unauthorized for URL: {url}")
+            elif response.status_code == 404:
+                print(f"Error 404: Resource not found for URL: {url}")
+            elif response.status_code == 429:
+                print(f"Error 429: Request limit exceeded for URL: {url}")
+            elif response.status_code >= 500:
+                print(f"Server error ({response.status_code}) for l'URL: {url}")
+            else:
+                print(f"Unknown HTTP Error: {http_err}")
+            return {}
+
+        except requests.exceptions.ConnectionError:
+            print(f"Connection Error: Unable to connect to{url}")
+            return {}
+
+        except requests.exceptions.Timeout:
+            print(f"Timeout: The server did not respond in time for the URL: {url}")
+            return {}
+
+        except requests.exceptions.RequestException as err:
+            print(f"HTTP request error: {err}")
+            return {}
+
         return {}
 
     def update_prices(
