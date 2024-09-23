@@ -1,0 +1,54 @@
+{% for tax_year in tax_report|sort %}
+    {% set cgains = tax_report[tax_year]['CapitalGains'] %}
+    {% set margin = tax_report[tax_year]['MarginTrading'] %}
+
+<h1 class="tax-year">Tax Year - {{ config.format_tax_year(tax_year) }}</h1>
+<h2 class="date-range">{{ config.get_tax_year_start(tax_year)|datefilter2 }} to {{ config.get_tax_year_end(tax_year)|datefilter2 }}</h2>
+
+<h2>Capital Gains Summary</h2>
+
+    {% set short_term_totals = cgains['short_term_totals'] %}
+    {% set long_term_totals = cgains['long_term_totals'] %}
+
+    {% set total_proceeds = short_term_totals['proceeds'] + long_term_totals['proceeds'] %}
+    {% set total_cost = short_term_totals['cost'] + long_term_totals['cost'] %}
+    {% set total_gain = short_term_totals['gain'] + long_term_totals['gain'] %}
+
+<table repeat="1" width="100%" class="summary-table mt mb">
+    <tr>
+        <th align="left">Proceeds</th>
+        <th align="left">Cost Basis</th>
+        <th align="right">Gain or (Loss)</th>
+        <th align="right">Tax (26%)</th>
+    </tr>
+    <tr>
+        <td align="right">{{ total_proceeds|valuefilter }}</td>
+        <td align="right">{{ total_cost|valuefilter }}</td>
+        {% set total_gain_margin = total_gain + margin.totals['gains'] - margin.totals['losses'] %}
+        {% if total_gain_margin >= 0 %}
+        <td align="right">{{ total_gain_margin|valuefilter }}</td>
+        {% else %}
+        <td align="right" class="red-font">{{ total_gain_margin|valuefilter }}</td>
+        {% endif %}
+        <td align="right">{{ (total_gain_margin * 0.26)|valuefilter }}</td>
+    </tr>
+</table>
+
+<h2>Margin Trading Summary</h2>
+<table class="summary-table">
+    <tr>
+        <th align="left">Total Gains</th>
+        <th align="left">Total Losses</th>
+        <th align="left">Total Fees</th>
+    </tr>
+    <tr>
+        <td align="right">{{ margin.totals['gains']|valuefilter }}</td>
+        <td align="right">{{ margin.totals['losses']|valuefilter }}</td>
+        <td align="right">{{ margin.totals['fees']|valuefilter }}</td>
+    </tr>
+</table>
+
+    {% if not loop.last %}
+<pdf:nextpage />
+    {% endif %}
+{% endfor %}
