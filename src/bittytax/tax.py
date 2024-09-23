@@ -483,21 +483,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         if tax_year:
             transactions = [t for t in transactions if t.year <= tax_year]
 
-        def update_balance(t, operation):
-            if config.debug:
-                print(f"{Fore.GREEN}Processing {operation.__name__.capitalize()} for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
-            operation(t.quantity, t.timestamp)
-
-        def process_transaction(t):
-            """Processa la transazione Buy o Sell e aggiorna il bilancio"""
-            if isinstance(t, Buy):
-                update_balance(t, self.holdings[t.asset]._addto_balance_history)
-            elif isinstance(t, Sell):
-                update_balance(t, self.holdings[t.asset]._subctractto_balance_history)
-
-            if config.debug:
-                print(f"{Fore.YELLOW}Updated Holdings for {t.asset}: {self.holdings[t.asset]}")
-
         for t in tqdm(
             transactions,
             unit="t",
@@ -510,7 +495,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             if t.matched:
                 if config.debug:
                     print(f"{Fore.BLUE}holdings: //{t} <- matched")
-                process_transaction(t)
+                self._process_transaction(t)
                 continue
 
             if not config.transfers_include and t.t_type in TRANSFER_TYPES:
@@ -518,15 +503,15 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     print(f"{Fore.BLUE}holdings: //{t} <- transfer {'crypto' if t.is_crypto() else 'fiat'}")
 
                 if isinstance(t, Buy):
-                    process_transaction(t)
+                    self._process_transaction(t)
                 elif isinstance(t, Sell):
-                    process_transaction(t)
+                    self._process_transaction(t)
                 continue
 
-            if not t.is_crypto():
+            if t.is_fiat():
                 if config.debug:
                     print(f"{Fore.BLUE}holdings: //{t} <- fiat")
-                process_transaction(t)
+                self._process_transaction(t)
                 continue
 
             if config.debug:
@@ -536,6 +521,20 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 self._add_tokens(t)
             elif isinstance(t, Sell):
                 self._subtract_tokens(t)
+
+    def _update_balance(self, t, operation):
+        if config.debug:
+            print(f"{Fore.GREEN}Processing {operation.__name__.capitalize()} for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
+        operation(t.quantity, t.timestamp)
+
+    def _process_transaction(self, t):
+        if isinstance(t, Buy):
+            self._update_balance(t, self.holdings[t.asset]._addto_balance_history)
+        elif isinstance(t, Sell):
+            self._update_balance(t, self.holdings[t.asset]._subctractto_balance_history)
+
+        if config.debug:
+            print(f"{Fore.YELLOW}Updated Holdings for {t.asset}: {self.holdings[t.asset]}")
 
     def _add_tokens(self, t: Buy) -> None:
         if not t.acquisition:
@@ -784,7 +783,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     if config.debug:
                         print(f"Asset {h}: Quantity at end of year = {quantity_end_of_year}, Average balance = {average_balance}")
                     
-                    if holdings.is_crypto():  # Verifica se l'asset è una criptovaluta
+                    if holdings.is_crypto():
                         # Get the historical value in fiat at the end of the year (use end_of_year_datetime_utc)
                         try:
                             price_at_end_of_year, _, _ = value_asset.get_historical_price(h, end_of_year_datetime_utc, no_cache=False)
@@ -801,7 +800,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                             value_in_fiat = Decimal(0)
                             if config.debug:
                                 print(f"Asset {h}: HTTP error, setting value in fiat to 0")
-                    else:
+                    if holdings.is_fiat():
                         # If it is not a cryptocurrency, use the amount directly as fiat value
                         value_in_fiat = quantity_end_of_year
                         if config.debug:

@@ -269,6 +269,9 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
     def is_crypto(self) -> bool:
         return bool(self.asset not in config.fiat_list)
 
+    def is_fiat(self) -> bool:
+        return bool(self.asset in config.fiat_list)
+
     def is_nft(self) -> bool:
         match = re.match(r".+#(\d+)$", self.asset)
         return bool(match)

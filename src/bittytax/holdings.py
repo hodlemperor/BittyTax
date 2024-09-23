@@ -26,14 +26,20 @@ class Holdings:
         self.balance_history = [(None, Decimal(0))]
         self.cost_history = [(None, Decimal(0))]
 
+    def is_crypto(self) -> bool:
+        return bool(self.asset not in config.fiat_list)
+
+    def is_fiat(self) -> bool:
+        return bool(self.asset in config.fiat_list)
+
     def _addto_balance_history(self, quantity: Decimal, transaction_date: datetime) -> None:
         last_balance = self.balance_history[-1][1]  # Ultimo bilancio salvato
-        new_balance = last_balance + quantity  # Sommare alla quantità esistente
+        new_balance = last_balance + quantity  # Sommare alla quantit? esistente
         self._update_balance_history(new_balance, transaction_date)  # Aggiorna lo storico del bilancio
 
     def _subctractto_balance_history(self, quantity: Decimal, transaction_date: datetime) -> None:
         last_balance = self.balance_history[-1][1]  # Ultimo bilancio salvato
-        new_balance = last_balance - quantity  # Sottrarre dalla quantità esistente
+        new_balance = last_balance - quantity  # Sottrarre dalla quantit? esistente
         self._update_balance_history(new_balance, transaction_date)  # Aggiorna lo storico del bilancio
 
     def _update_balance_history(self, new_balance: Decimal, transaction_date: datetime) -> None:
@@ -41,7 +47,7 @@ class Holdings:
         if config.debug:
             print(f"Updating balance history. New balance: {new_balance}, Transaction date: {transaction_date}")
 
-        # Controlla se il primo bilancio non è stato ancora impostato
+        # Controlla se il primo bilancio non ? stato ancora impostato
         if self.balance_history[-1][0] is None:
             if config.debug:
                 print(f"First entry in balance history is None, updating with: {transaction_date.date()}, {new_balance}")
@@ -53,7 +59,7 @@ class Holdings:
             if config.debug:
                 print(f"Last balance in history: {last_balance}, New balance: {new_balance}")
 
-            # Aggiunge una nuova voce solo se il nuovo bilancio è diverso dall'ultimo
+            # Aggiunge una nuova voce solo se il nuovo bilancio ? diverso dall'ultimo
             if new_balance != last_balance:
                 if config.debug:
                     print(f"New balance differs from last balance, appending to history: {transaction_date.date()}, {new_balance}")
