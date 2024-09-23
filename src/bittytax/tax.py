@@ -71,6 +71,7 @@ class YearlyReportAsset(TypedDict):
     quantity_end_of_year: Decimal
     average_balance: Decimal
     value_in_fiat_at_end_of_year: Decimal
+    days_held: int 
 
 class YearlyReportTotal(TypedDict):
     total_value_in_fiat_at_end_of_year: Decimal
@@ -777,8 +778,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     if config.debug:
                         print(f"Processing asset {h} for year {year}")
 
-                    # Calculate average balance for the year
-                    average_balance = holdings.calculate_average_balance(start_of_year_date, end_of_year_date)
+                    average_balance = holdings.calculate_average_balance(start_of_year_date, end_of_year_date)  # Calculate average balance for the year
+                    days_held = holdings.calculate_days_held(start_of_year_date, end_of_year_date)  # Calculate the days of detention
 
                     if config.debug:
                         print(f"Asset {h}: Quantity at end of year = {quantity_end_of_year}, Average balance = {average_balance}")
@@ -813,7 +814,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     assets_report[h] = YearlyReportAsset(
                         quantity_end_of_year=quantity_end_of_year,
                         average_balance=average_balance,
-                        value_in_fiat_at_end_of_year=value_in_fiat
+                        value_in_fiat_at_end_of_year=value_in_fiat,
+                        days_held=days_held
                     )
 
             # Save the total amount in the report

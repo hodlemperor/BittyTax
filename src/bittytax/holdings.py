@@ -171,3 +171,26 @@ class Holdings:
         if day_count > 0:
             return total_balance / Decimal(day_count)
         return Decimal(0)
+
+    def calculate_days_held(self, start_date: datetime.date, end_date: datetime.date) -> int:
+        total_days = 0
+        current_date = start_date
+        previous_balance = Decimal(0)
+    
+        for date, balance in self.balance_history:
+            if date > end_date:
+                break
+
+            # If the date is between start_date and end_date and there is a balance > 0
+            if date >= current_date and previous_balance > 0:
+                days_held = (min(date, end_date) - current_date).days
+                total_days += days_held
+
+            current_date = max(current_date, date)
+            previous_balance = balance
+
+        # If the last period has a positive balance until end_date
+        if current_date <= end_date and previous_balance > 0:
+            total_days += (end_date - current_date).days + 1
+    
+        return total_days

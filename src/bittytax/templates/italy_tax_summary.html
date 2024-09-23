@@ -4,7 +4,7 @@
 
 <h1>Tax Summary (italy)</h1>
 
-<h2>{{ config.get_tax_year_start(tax_year)|format_date("%d-%m") }} to {{ config.get_tax_year_end(tax_year)|format_date("%d-%m") }} {{ config.format_tax_year(tax_year) }}</h2>
+<h2>{{ config.format_tax_year(tax_year) }} - {{ config.get_tax_year_start(tax_year)|format_date("%d/%m") }} to {{ config.get_tax_year_end(tax_year)|format_date("%d/%m") }}</h2>
 <h3>Capital Gain</h3>
 
     {% set short_term_totals = cgains['short_term_totals'] %}
@@ -53,9 +53,10 @@
     <thead>
         <tr>
             <th align="left">Asset</th>
-            <th align="right">Quantity at {{ config.get_tax_year_end(tax_year) | format_date("%d-%m") }}</th>
+            <th align="right">Quantity at {{ config.get_tax_year_end(tax_year) | format_date("%d/%m") }}</th>
             <th align="right">Average Balance</th>
-            <th align="right">Value (Fiat) at {{ config.get_tax_year_end(tax_year) | format_date("%d-%m") }}</th>
+            <th align="right">Value (Fiat) at {{ config.get_tax_year_end(tax_year) | format_date("%d/%m") }}</th>
+            <th align="right">Days Held</th>
             {% if tax_year >= 2023 %}
             <th align="right">IVAFE (0.2%)</th>
             {% endif %}
@@ -69,10 +70,12 @@
             <td align="right">{{ asset_data.average_balance | format_decimal }}</td>
             {% if asset_data.value_in_fiat_at_end_of_year is not none %}
             <td align="right">{{ asset_data.value_in_fiat_at_end_of_year | valuefilter }}</td>
+            <td align="right">{{ asset_data.days_held }}</td>
             {% if tax_year >= 2023 %}
             <td align="right">{{ (asset_data.value_in_fiat_at_end_of_year * decimal.Decimal('0.02')) | valuefilter }}</td>
             {% endif %}
             {% else %}
+            <td align="right"><i>Not available</i></td>
             <td align="right"><i>Not available</i></td>
             {% if tax_year >= 2023 %}
             <td align="right"><i>Not available</i></td>
