@@ -2,7 +2,7 @@
 # (c) Nano Nano Ltd 2019
 
 import argparse
-import datetime
+from datetime import date, datetime
 from doctest import debug
 import itertools
 import os
@@ -86,7 +86,7 @@ class ReportPdf:
             template = self.env.get_template(self.AUDIT_TEMPLATE)
             html = template.render(
                 {
-                    "date": datetime.datetime.now(),
+                    "date": datetime.now(),
                     "author": f"{progname} v{__version__}",
                     "config": config,
                     "args": args,
@@ -98,7 +98,7 @@ class ReportPdf:
             template = self.env.get_template(self.TAX_SUMMARY_TEMPLATE)
             html = template.render(
                 {
-                    "date": datetime.datetime.now(),
+                    "date": datetime.now(),
                     "author": f"{progname} v{__version__}",
                     "config": config,
                     "args": args,
@@ -111,7 +111,7 @@ class ReportPdf:
             template = self.env.get_template(self.TAX_FULL_TEMPLATE)
             html = template.render(
                 {
-                    "date": datetime.datetime.now(),
+                    "date": datetime.now(),
                     "author": f"{progname} v{__version__}",
                     "config": config,
                     "args": args,
@@ -144,7 +144,7 @@ class ReportPdf:
 
     @staticmethod
     def format_date(value, format="%Y-%m-%d"):
-        if isinstance(value, datetime):
+        if isinstance(value, (date, datetime)):
             return value.strftime(format)
         return value
 
