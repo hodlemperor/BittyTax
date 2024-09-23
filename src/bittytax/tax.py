@@ -509,11 +509,36 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             if not config.transfers_include and t.t_type in TRANSFER_TYPES:
                 if config.debug:
                     print(f"{Fore.BLUE}holdings: //{t} <- transfer")
+                if not t.is_crypto():
+                    if config.debug:
+                        print(f"{Fore.BLUE}holdings: //{t} <- fiat")
+
+                    if isinstance(t, Buy):
+                        if config.debug:
+                            print(f"{Fore.GREEN}Processing Buy for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
+                        self.holdings[t.asset]._addto_balance_history(t.quantity, t.timestamp)
+
+                    elif isinstance(t, Sell):
+                        if config.debug:
+                            print(f"{Fore.RED}Processing Sell for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
+                        self.holdings[t.asset]._subctractto_balance_history(t.quantity, t.timestamp)
+                    continue
+
                 continue
 
             if not t.is_crypto():
                 if config.debug:
                     print(f"{Fore.BLUE}holdings: //{t} <- fiat")
+
+                if isinstance(t, Buy):
+                    if config.debug:
+                        print(f"{Fore.GREEN}Processing Buy for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
+                    self.holdings[t.asset]._addto_balance_history(t.quantity, t.timestamp)
+
+                elif isinstance(t, Sell):
+                    if config.debug:
+                        print(f"{Fore.RED}Processing Sell for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
+                    self.holdings[t.asset]._subctractto_balance_history(t.quantity, t.timestamp)
                 continue
 
             if config.debug:
@@ -771,23 +796,29 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
                     if config.debug:
                         print(f"Asset {h}: Quantity at end of year = {quantity_end_of_year}, Average balance = {average_balance}")
-
-                    # Get the historical value in fiat at the end of the year (use end_of_year_datetime_utc)
-                    try:
-                        price_at_end_of_year, _, _ = value_asset.get_historical_price(h, end_of_year_datetime_utc, no_cache=False)
-                        if price_at_end_of_year is not None:
-                            value_in_fiat = quantity_end_of_year * price_at_end_of_year
+                    
+                    if holdings.is_crypto():  # Verifica se l'asset è una criptovaluta
+                        # Get the historical value in fiat at the end of the year (use end_of_year_datetime_utc)
+                        try:
+                            price_at_end_of_year, _, _ = value_asset.get_historical_price(h, end_of_year_datetime_utc, no_cache=False)
+                            if price_at_end_of_year is not None:
+                                value_in_fiat = quantity_end_of_year * price_at_end_of_year
+                                if config.debug:
+                                    print(f"Asset {h}: Price at end of year = {price_at_end_of_year}, Value in fiat = {value_in_fiat}")
+                            else:
+                                value_in_fiat = Decimal(0)  # If no price is found, set it to 0
+                                if config.debug:
+                                    print(f"Asset {h}: Price not found for end of year, setting value in fiat to 0")
+                        except requests.exceptions.HTTPError as e:
+                            tqdm.write(f"Warning: Unable to get historical price for {h} on {end_of_year_datetime} due to HTTP error: {e}")
+                            value_in_fiat = Decimal(0)
                             if config.debug:
-                                print(f"Asset {h}: Price at end of year = {price_at_end_of_year}, Value in fiat = {value_in_fiat}")
-                        else:
-                            value_in_fiat = Decimal(0)  # If no price is found, set it to 0
-                            if config.debug:
-                                print(f"Asset {h}: Price not found for end of year, setting value in fiat to 0")
-                    except requests.exceptions.HTTPError as e:
-                        tqdm.write(f"Warning: Unable to get historical price for {h} on {end_of_year_datetime} due to HTTP error: {e}")
-                        value_in_fiat = Decimal(0)
+                                print(f"Asset {h}: HTTP error, setting value in fiat to 0")
+                    else:
+                        # If it is not a cryptocurrency, use the amount directly as fiat value
+                        value_in_fiat = quantity_end_of_year
                         if config.debug:
-                            print(f"Asset {h}: HTTP error, setting value in fiat to 0")
+                            print(f"Asset {h} is not a cryptocurrency, using quantity as value in fiat: {value_in_fiat}")
 
                     # Add the fiat value to the annual sum
                     total_value_in_fiat += value_in_fiat
