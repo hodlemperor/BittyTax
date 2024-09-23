@@ -4,7 +4,7 @@
 
 <h1>Tax Summary (italy)</h1>
 
-<h2>{{ config.format_tax_year(tax_year) }} ({{ config.get_tax_year_start(tax_year)|datefilter2 }} to {{ config.get_tax_year_end(tax_year)|datefilter2 }})</h2>
+<h2>{{ config.format_tax_year(tax_year) }} ({{ config.get_tax_year_start(tax_year)|format_date("m-d") }} to {{ config.get_tax_year_end(tax_year)|format_date("m-d") }})</h2>
 <h3>Capital Gain</h3>
 
     {% set short_term_totals = cgains['short_term_totals'] %}
@@ -53,9 +53,9 @@
     <thead>
         <tr>
             <th align="left">Asset</th>
-            <th align="right">Quantity at End of Year</th>
+            <th align="right">Quantity at {{ config.get_tax_year_end(tax_year) | format_date("m-d") }}</th>
             <th align="right">Average Balance</th>
-            <th align="right">Value in Fiat at End of Year</th>
+            <th align="right">Value (Fiat) at {{ config.get_tax_year_end(tax_year) | format_date("m-d") }}</th>
             {% if tax_year >= 2023 %}
             <th align="right">IVAFE (0.2%)</th>
             {% endif %}
