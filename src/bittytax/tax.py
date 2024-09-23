@@ -10,7 +10,7 @@ from decimal import Decimal
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import requests
-from datetime import datetime, date, time, timezone
+from datetime import datetime, date, time, timezone, timedelta
 from colorama import Fore
 from dateutil.relativedelta import relativedelta
 from tqdm import tqdm
@@ -136,6 +136,10 @@ class BuyAccumulator:
     fee_value: Decimal = Decimal(0)
     dates: List[Date] = field(default_factory=list)
 
+class YearlyThresholdReport(TypedDict):
+    exceeded_threshold: bool
+    days_above_threshold: List[date]
+    consecutive_working_days: int
 
 class MarginReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
     gains: Decimal
@@ -479,66 +483,50 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         if tax_year:
             transactions = [t for t in transactions if t.year <= tax_year]
 
+        def update_balance(t, operation):
+            if config.debug:
+                print(f"{Fore.GREEN}Processing {operation.__name__.capitalize()} for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
+            operation(t.quantity, t.timestamp)
+
+        def process_transaction(t):
+            """Processa la transazione Buy o Sell e aggiorna il bilancio"""
+            if isinstance(t, Buy):
+                update_balance(t, self.holdings[t.asset]._addto_balance_history)
+            elif isinstance(t, Sell):
+                update_balance(t, self.holdings[t.asset]._subctractto_balance_history)
+
+            if config.debug:
+                print(f"{Fore.YELLOW}Updated Holdings for {t.asset}: {self.holdings[t.asset]}")
+
         for t in tqdm(
             transactions,
             unit="t",
             desc=f"{Fore.CYAN}process holdings{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
-            if t.is_crypto() and t.asset not in self.holdings:
+            if t.asset not in self.holdings:
                 self.holdings[t.asset] = Holdings(t.asset)
 
             if t.matched:
                 if config.debug:
                     print(f"{Fore.BLUE}holdings: //{t} <- matched")
-
-                if isinstance(t, Buy):
-                    if config.debug:
-                        print(f"{Fore.GREEN}Processing Buy for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
-                    self.holdings[t.asset]._addto_balance_history(t.quantity, t.timestamp)
-
-                elif isinstance(t, Sell):
-                    if config.debug:
-                        print(f"{Fore.RED}Processing Sell for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
-                    self.holdings[t.asset]._subctractto_balance_history(t.quantity, t.timestamp)
-    
-                if config.debug:
-                    print(f"{Fore.YELLOW}Updated Holdings for {t.asset}: {self.holdings[t.asset]}") 
+                process_transaction(t)
                 continue
 
             if not config.transfers_include and t.t_type in TRANSFER_TYPES:
                 if config.debug:
-                    print(f"{Fore.BLUE}holdings: //{t} <- transfer")
-                if not t.is_crypto():
-                    if config.debug:
-                        print(f"{Fore.BLUE}holdings: //{t} <- fiat")
+                    print(f"{Fore.BLUE}holdings: //{t} <- transfer {'crypto' if t.is_crypto() else 'fiat'}")
 
-                    if isinstance(t, Buy):
-                        if config.debug:
-                            print(f"{Fore.GREEN}Processing Buy for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
-                        self.holdings[t.asset]._addto_balance_history(t.quantity, t.timestamp)
-
-                    elif isinstance(t, Sell):
-                        if config.debug:
-                            print(f"{Fore.RED}Processing Sell for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
-                        self.holdings[t.asset]._subctractto_balance_history(t.quantity, t.timestamp)
-                    continue
-
+                if isinstance(t, Buy):
+                    process_transaction(t)
+                elif isinstance(t, Sell):
+                    process_transaction(t)
                 continue
 
             if not t.is_crypto():
                 if config.debug:
                     print(f"{Fore.BLUE}holdings: //{t} <- fiat")
-
-                if isinstance(t, Buy):
-                    if config.debug:
-                        print(f"{Fore.GREEN}Processing Buy for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
-                    self.holdings[t.asset]._addto_balance_history(t.quantity, t.timestamp)
-
-                elif isinstance(t, Sell):
-                    if config.debug:
-                        print(f"{Fore.RED}Processing Sell for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
-                    self.holdings[t.asset]._subctractto_balance_history(t.quantity, t.timestamp)
+                process_transaction(t)
                 continue
 
             if config.debug:
@@ -782,14 +770,13 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             # Cycle on each asset in holdings with progress bar
             for h in tqdm(self.holdings, unit="asset", desc=f"Processing year {year}", leave=False):
                 holdings = self.holdings[h]
+                # Get quantity at the end of the year (use end_of_year_date which is a date object)
+                quantity_end_of_year = holdings.get_balance_at_date(end_of_year_date)
 
                 # Quantity check (exclude if zero, unless config.show_empty_wallets is enabled)
-                if holdings.quantity > 0 or config.show_empty_wallets:
+                if quantity_end_of_year > 0 or config.show_empty_wallets:
                     if config.debug:
                         print(f"Processing asset {h} for year {year}")
-
-                    # Get quantity at the end of the year (use end_of_year_date which is a date object)
-                    quantity_end_of_year = holdings.get_balance_at_date(end_of_year_date)
 
                     # Calculate average balance for the year
                     average_balance = holdings.calculate_average_balance(start_of_year_date, end_of_year_date)
@@ -844,6 +831,80 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         # Save the report in the self.yearly_holdings_report instance field
         self.yearly_holdings_report = yearly_holdings_report
         tqdm.write("Yearly report saved to self.yearly_holdings_report.")
+
+    def check_holding_threshold(self, value_asset: ValueAsset, tax_year: int, threshold: Decimal = Decimal("51645.69")) -> bool:
+        """
+        Check if the euro value of the cryptocurrencies held has exceeded the threshold of €51,645.69
+        for at least seven consecutive working days, only for tax years up to 2022 (inclusive).
+        """
+        # Skip calculation if the year is greater than 2022
+        if tax_year > 2022:
+            return False  # Skip calculation for years after 2022
+
+        # Retrieve the start and end date of the fiscal year
+        start_date = self._start_of_year(tax_year)
+        end_date = self._end_of_year(tax_year)
+
+        current_value = Decimal(0)
+        consecutive_working_days = 0
+        days_above_threshold = []
+        exceeded_threshold = False
+
+        # Iterate on every day of the year
+        current_date = start_date
+        while current_date <= end_date:
+            # Consider only working days (Mon-Fri)
+            if current_date.weekday() < 5:  # Monday = 0, ..., Friday = 4
+                # Calculate the value on that day
+                current_value = Decimal(0)
+                for asset, holding in self.holdings.items():
+                    # Get the balance for that date
+                    quantity = holding.get_balance_at_date(current_date)
+                    price_at_date, _, _ = value_asset.get_historical_price(asset, current_date)
+
+                    # Add the total value
+                    current_value += quantity * price_at_date
+            
+                # Check if the value exceeds the threshold
+                if current_value >= threshold:
+                    consecutive_working_days += 1
+                    days_above_threshold.append(current_date)  # Save the date above the threshold
+                else:
+                    consecutive_working_days = 0
+                    days_above_threshold = []  # Reset the list if the threshold is not exceeded
+
+                # If we exceed 7 consecutive working days, save the result and stop
+                if consecutive_working_days >= 7:
+                    exceeded_threshold = True
+                    break
+
+            # Skip to the next day
+            current_date += timedelta(days=1)
+
+        # Save the report in yearly holdings report
+        self._save_threshold_in_yearly_report(exceeded_threshold, days_above_threshold, consecutive_working_days)
+        return exceeded_threshold  # Return whether the threshold was exceeded or not
+
+    def _save_threshold_in_yearly_report(self, exceeded_threshold: bool, days_above_threshold: List[date], consecutive_working_days: int) -> None:
+        """
+        Salva il report della soglia nel report annuale `self.yearly_holdings_report`.
+        """
+        # Crea la struttura del report della soglia
+        threshold_report = YearlyThresholdReport(
+            exceeded_threshold=exceeded_threshold,
+            days_above_threshold=days_above_threshold,
+            consecutive_working_days=consecutive_working_days
+        )
+
+        # Aggiungi il report al report annuale esistente
+        if self.yearly_holdings_report:
+            year = datetime.now().year
+            if year in self.yearly_holdings_report:
+                self.yearly_holdings_report[year]['threshold_report'] = threshold_report
+            else:
+                self.yearly_holdings_report[year] = {'threshold_report': threshold_report}
+        
+        print(f"Report della soglia salvato per l'anno {datetime.now().year}.")
 
 class CalculateCapitalGains:
     # Rate changes start from 6th April in previous year, i.e. 2022 is for tax year 2021/22

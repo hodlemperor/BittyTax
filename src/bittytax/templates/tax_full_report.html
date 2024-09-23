@@ -28,6 +28,10 @@
                 <pdf:nextpage />
             {% endif %}
         {% endfor %}
+        {% if yearly_holdings_report %}
+            <pdf:nextpage />
+            {% include "italy_tax_summary.html" %}
+        {% endif %}
         <pdf:nextpage />
         <h1>Appendix</h1>
         {% for tax_year in tax_report|sort %}
@@ -36,10 +40,6 @@
                 <pdf:nextpage />
             {% endif %}
         {% endfor %}
-        {% if yearly_holdings_report %}
-           <pdf:nextpage />
-           {% include "yearly_holdings.html" %}
-        {% endif %}
         {% if holdings_report %}
            <pdf:nextpage />
            {% include "holdings.html" %}

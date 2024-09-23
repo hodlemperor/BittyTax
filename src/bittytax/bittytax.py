@@ -335,6 +335,9 @@ def _do_each_tax_year(
             "MarginTrading": calc_margin_trading,
         }
 
+        # Check if the threshold of €51,645.69 has been exceeded
+        threshold_exceeded = tax.check_holding_threshold(value_asset, tax_year)
+
         if not summary_only:
             tax.calculate_yearly_holdings(value_asset, tax_year)
     else:
@@ -351,6 +354,9 @@ def _do_each_tax_year(
                     "Income": calc_income,
                     "MarginTrading": calc_margin_trading,
                 }
+
+                # Check the threshold for each year
+                threshold_exceeded = tax.check_holding_threshold(value_asset, year)
 
             else:
                 print(f"{WARNING} Tax year {year} is not supported")

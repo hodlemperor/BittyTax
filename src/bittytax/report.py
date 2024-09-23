@@ -9,6 +9,7 @@ import os
 import sys
 import threading
 import time
+import decimal
 from decimal import Decimal
 from types import TracebackType
 from typing import Dict, List, Optional, Tuple, Type
@@ -67,6 +68,7 @@ class ReportPdf:
 
         self.env.filters["datefilter"] = self.datefilter
         self.env.filters["datefilter2"] = self.datefilter2
+        self.env.filters["format_date"] = self.format_date
         self.env.filters["quantityfilter"] = self.quantityfilter
         self.env.filters["format_decimal"] = self.format_decimal
         self.env.filters["valuefilter"] = self.valuefilter
@@ -119,6 +121,7 @@ class ReportPdf:
                     "holdings_report": holdings_report,
                     "yearly_holdings_report": yearly_holdings_report,
                     "matching_method": config.matching_method,
+                    "decimal": decimal,
                 }
             )
 
@@ -138,6 +141,12 @@ class ReportPdf:
     @staticmethod
     def datefilter2(date: Date) -> str:
         return f"{date:%b} {date.day}{ReportLog.format_day(date.day)} {date:%Y}"
+
+    @staticmethod
+    def format_date(value, format="%Y-%m-%d"):
+        if isinstance(value, datetime):
+            return value.strftime(format)
+        return value
 
     @staticmethod
     def quantityfilter(quantity: Decimal) -> str:
