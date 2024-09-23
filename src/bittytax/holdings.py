@@ -27,14 +27,14 @@ class Holdings:
         self.cost_history = [(None, Decimal(0))]
 
     def _addto_balance_history(self, quantity: Decimal, transaction_date: datetime) -> None:
-        last_balance = self.balance_history[-1][1]  # Ultimo bilancio salvato
-        new_balance = last_balance + quantity  # Sommare alla quantità esistente
-        self._update_balance_history(new_balance, transaction_date)  # Aggiorna lo storico del bilancio
+        last_balance = self.balance_history[-1][1]
+        new_balance = last_balance + quantity
+        self._update_balance_history(new_balance, transaction_date)
 
     def _subctractto_balance_history(self, quantity: Decimal, transaction_date: datetime) -> None:
-        last_balance = self.balance_history[-1][1]  # Ultimo bilancio salvato
-        new_balance = last_balance - quantity  # Sottrarre dalla quantità esistente
-        self._update_balance_history(new_balance, transaction_date)  # Aggiorna lo storico del bilancio
+        last_balance = self.balance_history[-1][1]
+        new_balance = last_balance - quantity
+        self._update_balance_history(new_balance, transaction_date)
 
     def _update_balance_history(self, new_balance: Decimal, transaction_date: datetime) -> None:
         if self.balance_history[-1][0] is None:

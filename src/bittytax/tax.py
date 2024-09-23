@@ -757,14 +757,13 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             # Cycle on each asset in holdings with progress bar
             for h in tqdm(self.holdings, unit="asset", desc=f"Processing year {year}", leave=False):
                 holdings = self.holdings[h]
+                # Get quantity at the end of the year (use end_of_year_date which is a date object)
+                quantity_end_of_year = holdings.get_balance_at_date(end_of_year_date)
 
                 # Quantity check (exclude if zero, unless config.show_empty_wallets is enabled)
-                if holdings.quantity > 0 or config.show_empty_wallets:
+                if quantity_end_of_year > 0 or config.show_empty_wallets:
                     if config.debug:
                         print(f"Processing asset {h} for year {year}")
-
-                    # Get quantity at the end of the year (use end_of_year_date which is a date object)
-                    quantity_end_of_year = holdings.get_balance_at_date(end_of_year_date)
 
                     # Calculate average balance for the year
                     average_balance = holdings.calculate_average_balance(start_of_year_date, end_of_year_date)
