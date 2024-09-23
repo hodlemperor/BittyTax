@@ -33,4 +33,10 @@
         <td align="right"><strong>{{ report.totals.total_value_in_fiat_at_end_of_year | valuefilter }}</strong></td>
     </tr>
 </table>
+
+{% if tax_year >= 2023 %}
+<h3>IVAFE (Imposta sul valore delle crypto-attività):</h3>
+    {% set ivafe = report.totals.total_value_in_fiat_at_end_of_year * 0.002 %}
+<p><strong>{{ ivafe | valuefilter }}</strong></p>
+{% endif %}
 {% endfor %}
