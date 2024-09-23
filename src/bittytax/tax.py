@@ -141,12 +141,12 @@ class YearlyThresholdReport(TypedDict):
     exceeded_threshold: bool
     days_above_threshold: List[date]
     consecutive_working_days: int
+    missing_prices: List[Tuple[AssetSymbol, date]]
 
 class MarginReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
     gains: Decimal
     losses: Decimal
     fees: Decimal
-
 
 class TaxCalculator:  # pylint: disable=too-many-instance-attributes
     INCOME_TYPES = (
@@ -744,18 +744,20 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             if config.debug:
                 print(f"Generating report for the year {tax_year}")
 
-        # Initialize the annual report
         yearly_holdings_report = {}
 
+        if self.yearly_holdings_report is None:
+            self.yearly_holdings_report = {}
+
         # Cycle through each fiscal year with progress bar
-        for year in tqdm(years, desc="Generating yearly report"):
+        for year in tqdm(years, desc=f"{Fore.CYAN}Generating yearly report{Fore.GREEN}"):
             # Get end-of-year date (just the date part)
             end_of_year_date = self._end_of_year(year)  # This is a date (without time)
         
             # Get end-of-year datetime (date + time)
             end_of_year_datetime = datetime.combine(end_of_year_date, time.min)  # This is a datetime (with time)
 
-            # Convertire end_of_year_datetime in UTC prima di passarlo a get_historical_price
+            # Convert end_of_year_datetime in UTC
             end_of_year_datetime_utc = end_of_year_datetime.replace(tzinfo=timezone.utc)
         
             # Get the start-of-year date
@@ -852,12 +854,10 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         exceeded_threshold = False
         missing_prices = []
 
-        # Separare current_date in datetime e date
         current_datetime = datetime.combine(start_date, time.min)
         current_datetime = current_datetime.replace(tzinfo=timezone.utc)
-        current_date = current_datetime.date()  # Solo la data, senza il tempo
+        current_date = current_datetime.date()
 
-        # Convertire end_date in datetime
         end_datetime = datetime.combine(end_date, time.min)
         end_datetime = end_datetime.replace(tzinfo=timezone.utc)
 
@@ -877,7 +877,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     else:
                         print(f"Warning: price_at_date is None for asset {asset} on {current_date}")
                         missing_prices.append((asset, current_date))
-            
+        
                 # Check if the value exceeds the threshold
                 if current_value >= threshold:
                     consecutive_working_days += 1
@@ -895,30 +895,20 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             current_datetime += timedelta(days=1)
             current_date = current_datetime.date()
 
-        # Save the report in yearly holdings report
-        self._save_threshold_in_yearly_report(exceeded_threshold, days_above_threshold, consecutive_working_days, missing_prices)
-        return exceeded_threshold  # Return whether the threshold was exceeded or not
-
-    def _save_threshold_in_yearly_report(self, exceeded_threshold: bool, days_above_threshold: List[date], consecutive_working_days: int) -> None:
-        """
-        Salva il report della soglia nel report annuale `self.yearly_holdings_report`.
-        """
-        # Crea la struttura del report della soglia
+        # Save the report in yearly holdings report directly
         threshold_report = YearlyThresholdReport(
             exceeded_threshold=exceeded_threshold,
             days_above_threshold=days_above_threshold,
-            consecutive_working_days=consecutive_working_days
+            consecutive_working_days=consecutive_working_days,
+            missing_prices=missing_prices
         )
 
-        # Aggiungi il report al report annuale esistente
-        if self.yearly_holdings_report:
-            year = datetime.now().year
-            if year in self.yearly_holdings_report:
-                self.yearly_holdings_report[year]['threshold_report'] = threshold_report
-            else:
-                self.yearly_holdings_report[year] = {'threshold_report': threshold_report}
-        
-        print(f"Report della soglia salvato per l'anno {datetime.now().year}.")
+        if tax_year not in self.yearly_holdings_report:
+            self.yearly_holdings_report[tax_year] = {}
+
+        self.yearly_holdings_report[tax_year]['threshold_report'] = threshold_report
+
+        print(f"Threshold report saved for the year {tax_year}.")
 
 class CalculateCapitalGains:
     # Rate changes start from 6th April in previous year, i.e. 2022 is for tax year 2021/22

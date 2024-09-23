@@ -38,24 +38,26 @@
 
 <h3>Holdings</h3>
 
-{% if tax_year <= 2022 and yearly_holdings_report[tax_year].threshold_report is not none and yearly_holdings_report[tax_year].threshold_report.exceeded_threshold %}
+{% set threshold_report = yearly_holdings_report[tax_year].threshold_report | default(None) %}
+
+{% if tax_year <= 2022 and threshold_report is not none and threshold_report.exceeded_threshold %}
 <div style="color: red;">
     <strong>Warning:</strong> The crypto holdings exceeded €51,645.69 for at least 7 consecutive working days in {{ config.format_tax_year(tax_year) }}.
 </div>
-<p>Consecutive working days above threshold: {{ yearly_holdings_report[tax_year].threshold_report.consecutive_working_days }}</p>
+<p>Consecutive working days above threshold: {{ threshold_report.consecutive_working_days }}</p>
 <p>Days above threshold:</p>
 <ul>
-    {% for day in yearly_holdings_report[tax_year].threshold_report.days_above_threshold %}
+    {% for day in threshold_report.days_above_threshold %}
     <li>{{ day | format_date("%d-%m-%Y") }}</li>
     {% endfor %}
 </ul>
 {% endif %}
 
-{% if yearly_holdings_report[tax_year].threshold_report.missing_prices|length > 0 %}
+{% if threshold_report is not none and threshold_report.missing_prices is not none and threshold_report.missing_prices|length > 0 %}
 <div style="color: orange;">
     <strong>Notice:</strong> The following assets had missing prices, so their value could not be calculated:
     <ul>
-        {% for asset, date in yearly_holdings_report[tax_year].threshold_report.missing_prices %}
+        {% for asset, date in threshold_report.missing_prices %}
         <li>{{ asset }} on {{ date | format_date("%d-%m-%Y") }}</li>
         {% endfor %}
     </ul>

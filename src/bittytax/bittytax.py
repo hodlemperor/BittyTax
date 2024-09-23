@@ -335,11 +335,11 @@ def _do_each_tax_year(
             "MarginTrading": calc_margin_trading,
         }
 
-        # Check if the threshold of €51,645.69 has been exceeded
-        threshold_exceeded = tax.check_holding_threshold(value_asset, tax_year)
-
         if not summary_only:
             tax.calculate_yearly_holdings(value_asset, tax_year)
+            # Check if the threshold of €51,645.69 has been exceeded
+            tax.check_holding_threshold(value_asset, tax_year)
+
     else:
         # Calculate for all years
         for year in sorted(tax.tax_events):
@@ -355,15 +355,16 @@ def _do_each_tax_year(
                     "MarginTrading": calc_margin_trading,
                 }
 
-                # Check the threshold for each year
-                threshold_exceeded = tax.check_holding_threshold(value_asset, year)
-
             else:
                 print(f"{WARNING} Tax year {year} is not supported")
 
         if not summary_only:
             tax.calculate_holdings(value_asset)
             tax.calculate_yearly_holdings(value_asset)
+            for year in sorted(tax.tax_events):
+                if year in CCG.CG_DATA_INDIVIDUAL:
+                    # Check the threshold for each year
+                    tax.check_holding_threshold(value_asset, year)
 
 
 def _do_export(transaction_records: List[TransactionRecord]) -> None:
