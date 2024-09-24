@@ -730,16 +730,16 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         """
         current_year = datetime.now().year
 
-        # If a tax_year is not provided, generate the report for all years except the current year.
+        # If a tax_year is not provided, generate the report for all years include the current year.
         if tax_year is None:
             first_year = self._get_first_tax_year()
-            years = range(first_year, current_year)  # exclude the current year
+            years = range(first_year, current_year)
             if config.debug:
-                print(f"Generating report for all years from {first_year} to {current_year - 1}")
+                print(f"Generating report for all years from {first_year} to {current_year}")
         else:
-            # If tax_year is equal to the current year, raise an exception
+            # If tax_year is in the future, raise an exception
             if tax_year >= current_year:
-                raise ValueError("The current year or future years cannot be selected.")
+                raise ValueError("Future years cannot be selected.")
             years = [tax_year]  # Only the specified fiscal year
             if config.debug:
                 print(f"Generating report for the year {tax_year}")
