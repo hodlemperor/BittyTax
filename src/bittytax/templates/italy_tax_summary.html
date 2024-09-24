@@ -1,11 +1,11 @@
+<h1>Tax Summary (Italy)</h1>
+
 {% for tax_year in tax_report|sort %}
     {% if tax_year in yearly_holdings_report %}
         {% set cgains = tax_report[tax_year]['CapitalGains'] %}
         {% set margin = tax_report[tax_year]['MarginTrading'] %}
 
-<h1>Tax Summary (Italy)</h1>
-<h4>{{ config.get_tax_year_start(tax_year)|format_date("%d/%m") }} to {{ config.get_tax_year_end(tax_year)|format_date("%d/%m") }}</h4>
-<h2>{{ config.format_tax_year(tax_year) }}</h2>
+<h2 style="text-align: center;">{{ config.format_tax_year(tax_year) }}</h2>
 
 <h3>Capital Gain</h3>
 
@@ -46,12 +46,9 @@
         <strong>Warning:</strong> The crypto holdings exceeded €51,645.69 for at least 7 consecutive working days in {{ config.format_tax_year(tax_year) }}.
     </div>
     <p>Consecutive working days above threshold: {{ threshold_report.consecutive_working_days }}</p>
-    <p>Days above threshold:</p>
-    <ul>
-        {% for day in threshold_report.days_above_threshold %}
-            <li>{{ day | format_date("%d-%m-%Y") }}</li>
-        {% endfor %}
-    </ul>
+    <p>Days above threshold: Started day: {{ threshold_report.days_above_threshold[0] | format_date("%d-%m-%Y") }} with value: {{ threshold_report.days_above_threshold[0][1]|valuefilter }}</p>
+    </p>
+
 <!-- Case where the threshold has not been exceeded -->
 {% elif tax_year <= 2022 and threshold_report is not none and not threshold_report.exceeded_threshold and threshold_report.missing_prices == False %}
     <div style="color: green;">

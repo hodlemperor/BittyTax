@@ -881,7 +881,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 # Check if the value exceeds the threshold
                 if current_value >= threshold:
                     consecutive_working_days += 1
-                    days_above_threshold.append(current_date)  # Save the date above the threshold
+                    days_above_threshold.append((current_date, current_value))  # Save the date above the threshold
                 else:
                     consecutive_working_days = 0
                     days_above_threshold = []  # Reset the list if the threshold is not exceeded
