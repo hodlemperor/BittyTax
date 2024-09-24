@@ -867,17 +867,19 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 # Calculate the value on that day
                 current_value = Decimal(0)
                 for asset, holding in self.holdings.items():
-                    # Get the balance for that date
-                    quantity = holding.get_balance_at_date(current_date)
-                    price_at_date, _, _ = value_asset.get_historical_price(asset, current_datetime)
+                    if holding.is_crypto():
+                        # Get the balance for that date
+                        quantity = holding.get_balance_at_date(current_date)
+                        price_at_date, _, _ = value_asset.get_historical_price(asset, current_datetime)
 
-                    # Add the total value
-                    if price_at_date is not None:
-                        current_value += quantity * price_at_date
+                        # Add the total value
+                        if price_at_date is not None:
+                            current_value += quantity * price_at_date
+                        else:
+                            print(f"Warning: price_at_date is None for asset {asset} on {current_date}")
+                            missing_prices = True
                     else:
-                        print(f"Warning: price_at_date is None for asset {asset} on {current_date}")
-                        missing_prices = True
-        
+                        continue  # Ignore fiat currencies (they are not considered for exceeding the threshold)
                 # Check if the value exceeds the threshold
                 if current_value >= threshold:
                     consecutive_working_days += 1
