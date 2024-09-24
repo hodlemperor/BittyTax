@@ -33,9 +33,9 @@ class Config:
     DATA_SOURCE_CRYPTO = ["CryptoCompare", "CoinGecko"]
 
     DEFAULT_CONFIG = {
-        "local_currency": "USD",
-        "local_timezone": "America/New_York",
-        "date_is_day_first": False,
+        "local_currency": "EUR",
+        "local_timezone": "Europe/Rome",
+        "date_is_day_first": True,
         "default_tax_rules": "US_INDIVIDUAL",
         "fiat_list": FIAT_LIST,
         "crypto_list": CRYPTO_LIST,
@@ -60,8 +60,8 @@ class Config:
         "binance_multi_bnb_split_even": False,
         "binance_statements_only": False,
         "stablecoin_list": STABLECOIN_LIST,
-        "is_crypto2crypto_taxable": True,
-        "matching_method": "FIFO", # user can choose between 'FIFO' or 'LIFO'
+        "is_crypto2crypto_taxable": False,
+        "matching_method": "LIFO", # user can choose between 'FIFO' or 'LIFO'
     }
 
     OPTIONAL_CONFIG = (
