@@ -141,7 +141,7 @@ class YearlyThresholdReport(TypedDict):
     exceeded_threshold: bool
     days_above_threshold: List[date]
     consecutive_working_days: int
-    missing_prices: List[Tuple[AssetSymbol, date]]
+    missing_prices: bool
 
 class MarginReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
     gains: Decimal
@@ -852,7 +852,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         consecutive_working_days = 0
         days_above_threshold = []
         exceeded_threshold = False
-        missing_prices = []
+        missing_prices = False
 
         current_datetime = datetime.combine(start_date, time.min)
         current_datetime = current_datetime.replace(tzinfo=timezone.utc)
@@ -876,7 +876,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         current_value += quantity * price_at_date
                     else:
                         print(f"Warning: price_at_date is None for asset {asset} on {current_date}")
-                        missing_prices.append((asset, current_date))
+                        missing_prices = True
         
                 # Check if the value exceeds the threshold
                 if current_value >= threshold:

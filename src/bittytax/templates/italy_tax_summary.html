@@ -53,16 +53,23 @@
 </ul>
         {% endif %}
 
-        {% if threshold_report is not none and threshold_report.missing_prices is not none and threshold_report.missing_prices|length > 0 %}
-<div style="color: orange;">
-    <strong>Notice:</strong> The following assets had missing prices, so their value could not be calculated:
-    <ul>
-        {% for asset, date in threshold_report.missing_prices %}
-        <li>{{ asset }} on {{ date | format_date("%d-%m-%Y") }}</li>
-        {% endfor %}
-    </ul>
-</div>
-        {% endif %}
+{% if threshold_report is not none and threshold_report.missing_prices is not none %}
+    {% if threshold_report.missing_prices == True %}
+        <div style="color: orange;">
+            <strong>Notice:</strong> It was not possible to determine whether holdings exceeded €51,645.69 for at least 7 consecutive working days.
+        </div>
+    {% elif threshold_report.missing_prices|length > 0 %}
+        <div style="color: orange;">
+            <strong>Notice:</strong> The following assets had missing prices, so their value could not be calculated:
+            <ul>
+                {% for asset, date in threshold_report.missing_prices %}
+                    <li>{{ asset }} on {{ date | format_date("%d-%m-%Y") }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+{% endif %}
+
 
 <table repeat="1" width="100%" class="asset-table">
     <thead>
