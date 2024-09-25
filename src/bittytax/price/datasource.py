@@ -571,14 +571,17 @@ class CoinGecko(DataSourceBase):
         url = f"{self.api_root}/coins/{asset_id}/history?date={date_str}&localization=false"
         json_resp = self.get_json(url)
     
-        # Verifichiamo che i dati siano disponibili nel campo "market_data"
+        # Verifica che la risposta contenga market_data e current_price
         if "market_data" in json_resp and "current_price" in json_resp["market_data"]:
-            # Restituiamo il prezzo nel formato decimale
-            return Decimal(json_resp["market_data"]["current_price"].get(quote.lower(), 0))
+            # Estrai il prezzo per la valuta specificata (es. 'eur', 'btc', etc.)
+            price = json_resp["market_data"]["current_price"].get(quote.lower())
+            if price is not None:
+                return Decimal(price)
     
         # Se i dati non sono disponibili, logghiamo e restituiamo None
         print(f"Warning: No historical price found for asset {asset} on {date_str}")
         return None
+
 
 class CoinPaprika(DataSourceBase):
     MAX_DAYS = 5000
