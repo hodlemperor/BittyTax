@@ -88,7 +88,7 @@
             {% if asset_data.value_in_fiat_at_end_of_year is not none %}
             <td align="right">{{ asset_data.value_in_fiat_at_end_of_year | valuefilter }}</td>
             {% if tax_year >= 2023 %}
-            <td align="right">{{ (asset_data.value_in_fiat_at_end_of_year * decimal.Decimal('0.02')) | valuefilter }}</td>
+            <td align="right">{{ (asset_data.value_in_fiat_at_end_of_year * decimal.Decimal('0.002')) | valuefilter }}</td>
             {% endif %}
             {% else %}
             <td align="right"><i>Not available</i></td>
