@@ -916,18 +916,23 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         self.yearly_holdings_report[tax_year]['threshold_report'] = threshold_report
 
         print(f"Threshold report saved for the year {tax_year}.")
-
-    def get_daily_holdings_in_btc_and_eur(self, value_asset: ValueAsset, start_date: date, end_date: date) -> Dict[date, Dict[str, Decimal]]:
+    
+    def get_daily_holdings_in_btc_and_eur(self, value_asset: ValueAsset, start_date: date, end_date: date) -> None:
         """
-        Calcola il saldo giornaliero di tutte le criptovalute in BTC e EUR.
+        Calcola il saldo giornaliero di tutte le criptovalute in BTC e EUR e salva i risultati in self.daily_holdings_report.
         
         :param value_asset: Il servizio per ottenere i prezzi storici.
         :param start_date: Data di inizio per il calcolo.
         :param end_date: Data di fine per il calcolo.
-        :return: Un dizionario con la data come chiave e un altro dizionario contenente il saldo in BTC e il valore in EUR.
         """
         current_date = start_date
-        daily_holdings = {}
+        total_btc = Decimal(0)
+        total_eur = Decimal(0)
+        year = start_date.year
+
+        # Inizializza il report giornaliero per l'anno specifico
+        if year not in self.daily_holdings_report:
+            self.daily_holdings_report[year] = {}
 
         while current_date <= end_date:
             btc_total = Decimal(0)
@@ -951,15 +956,25 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     btc_total += btc_value
                     eur_total += eur_value
 
-            daily_holdings[current_date] = {
-                'btc_balance': btc_total,
-                'eur_value': eur_total
-            }
-            
+            # Salva i dati giornalieri nel report dell'anno corrente
+            self.daily_holdings_report[year][current_date] = DaylyReportRecord(
+                btc_balance=btc_total,
+                eur_value=eur_total
+            )
+
+            total_btc += btc_total
+            total_eur += eur_total
             current_date += timedelta(days=1)
-        
-        # Salva la giacenza media nel report
-        self.daily_holdings_report = daily_holdings
+
+        # Salva la giacenza media
+        days_count = (end_date - start_date).days + 1
+        average_btc = total_btc / days_count
+        average_eur = total_eur / days_count
+
+        self.daily_holdings_report[year]['average'] = {
+            'average_btc_balance': average_btc,
+            'average_eur_value': average_eur
+        }
     
     def get_average_balance_in_btc_and_eur(self, value_asset: ValueAsset, start_date: date, end_date: date) -> Dict[str, Decimal]:
         """
@@ -973,6 +988,11 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         total_btc = Decimal(0)
         total_eur = Decimal(0)
         days_count = (end_date - start_date).days + 1
+        year = start_date.year
+
+        # Inizializza il report giornaliero per l'anno specifico
+        if year not in self.daily_holdings_report:
+            self.daily_holdings_report[year] = {}
 
         current_date = start_date
         while current_date <= end_date:
@@ -996,6 +1016,12 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
                     daily_btc_total += btc_value
                     daily_eur_total += eur_value
+
+           # Salva i saldi giornalieri nel report
+            self.daily_holdings_report[year][current_date] = DaylyReportRecord(
+                btc_balance=daily_btc_total,
+                eur_value=daily_eur_total
+            )
 
             total_btc += daily_btc_total
             total_eur += daily_eur_total
