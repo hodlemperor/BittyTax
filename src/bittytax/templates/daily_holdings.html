@@ -1,4 +1,4 @@
-﻿<h1>Tax Summary (Italy)</h1>
+﻿<h1>Daily Holdings Report</h1>
 
 {% for tax_year in tax_report|sort %}
     {% if tax_year in yearly_holdings_report %}
@@ -8,7 +8,7 @@
 <h2 style="text-align: center;">{{ config.format_tax_year(tax_year) }}</h2>
 
 <!-- report giornaliero -->
-<h3>Daily Holdings Report</h3>
+
         {% if tax_year in daily_holdings_report %}
 <table repeat="1" width="100%" class="asset-table">
     <thead>
