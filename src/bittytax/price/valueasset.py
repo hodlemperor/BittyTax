@@ -179,7 +179,7 @@ class ValueAsset:
             )
 
     # Funzione per gestire la richiesta con retry, verifica delle chiavi e fallback
-    def get_data_with_retry(self, asset, quote, timestamp, attempts=1, delay=3, no_cache=False):
+    def get_data_with_retry(self, asset, quote, timestamp, attempts=1, delay=1, no_cache=False):
         for attempt in range(attempts):
             try:
                 # Effettua la richiesta per ottenere i dati
