@@ -919,9 +919,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
     
     def calculate_daily_holdings_and_average(self, value_asset: ValueAsset, tax_year: int) -> Dict[str, Decimal]:
         """
-        Calcola il saldo giornaliero di tutte le criptovalute in BTC e EUR per l'anno fiscale specificato,
-        e calcola la giacenza media in BTC e EUR per quell'anno fiscale. Salva i risultati in self.daily_holdings_report.
-        Ottimizza evitando di ricalcolare i saldi giornalieri se rimangono invariati.
+        Calcola il saldo giornaliero di tutte le criptovalute in BTC e usa il prezzo storico di BTC in EUR per calcolare il valore in EUR.
+        Salva i risultati nel report giornaliero e calcola la giacenza media.
         
         :param value_asset: Il servizio per ottenere i prezzi storici.
         :param tax_year: L'anno fiscale per il quale calcolare il saldo giornaliero e la giacenza media.
@@ -933,7 +932,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         
         current_date = start_date
         previous_btc_total = None
-        previous_eur_total = None
 
         total_btc = Decimal(0)
         total_eur = Decimal(0)
@@ -946,7 +944,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         # Cicla su tutti i giorni dell'anno fiscale
         while current_date <= end_date:
             daily_btc_total = Decimal(0)
-            daily_eur_total = Decimal(0)
 
             # Flag per tracciare se il saldo è cambiato rispetto al giorno precedente
             saldo_modificato = False
@@ -956,25 +953,25 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     # Ottieni il saldo di quell'asset in quel giorno
                     quantity = holdings.get_balance_at_date(current_date)
                     
-                    # Converti la quantità in BTC e EUR
+                    # Converti la quantità in BTC
                     if asset_symbol == 'BTC':
                         btc_value = quantity
                     else:
                         btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_date, 'BTC')
                         btc_value = quantity * btc_price
 
-                    eur_price, _, _ = value_asset.get_historical_price(asset_symbol, current_date, 'EUR')
-                    eur_value = quantity * eur_price
-
                     daily_btc_total += btc_value
-                    daily_eur_total += eur_value
 
             # Confronta il saldo del giorno corrente con quello del giorno precedente
-            if previous_btc_total is not None and daily_btc_total == previous_btc_total and daily_eur_total == previous_eur_total:
+            if previous_btc_total is not None and daily_btc_total == previous_btc_total:
                 # Il saldo è invariato, quindi possiamo evitare di ricalcolare
                 self.daily_holdings_report[tax_year][current_date] = self.daily_holdings_report[tax_year][current_date - timedelta(days=1)]
             else:
-                # Il saldo è cambiato, quindi salviamo il nuovo saldo
+                # Il saldo è cambiato, quindi calcola il valore totale in EUR utilizzando il prezzo storico di BTC in EUR
+                btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_date, 'EUR')
+                daily_eur_total = daily_btc_total * btc_to_eur_price
+
+                # Salva il saldo giornaliero in BTC e il valore in EUR nel report
                 self.daily_holdings_report[tax_year][current_date] = DaylyReportRecord(
                     btc_balance=daily_btc_total,
                     eur_value=daily_eur_total
@@ -986,7 +983,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 total_btc += daily_btc_total
                 total_eur += daily_eur_total
                 previous_btc_total = daily_btc_total
-                previous_eur_total = daily_eur_total
 
             # Incrementa la data di un giorno
             current_date += timedelta(days=1)
