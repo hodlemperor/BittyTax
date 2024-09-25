@@ -73,11 +73,6 @@ class Holdings:
         new_cost = last_cost + cost  # Somma il costo all'ultimo valore storico
         self._update_cost_history(new_cost, transaction_date)  # Aggiorna lo storico
 
-    def _subctractto_cost_history(self, cost: Decimal, transaction_date: datetime) -> None:
-        last_cost = self.cost_history[-1][1]  # Ottiene l'ultimo costo salvato nello storico
-        new_cost = last_cost - cost  # Sottrae il costo dall'ultimo valore storico
-        self._update_cost_history(new_cost, transaction_date)  # Aggiorna lo storico
-
     def _update_cost_history(self, new_cost: Decimal, transaction_date: datetime) -> None:
         if self.cost_history[-1][0] is None:
             # Inizializza il primo record

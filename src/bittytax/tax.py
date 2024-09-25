@@ -544,7 +544,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             self._update_cost(t, self.holdings[t.asset]._addto_cost_history, t.cost)
         elif isinstance(t, Sell):
             self._update_balance(t, self.holdings[t.asset]._subctractto_balance_history)
-            self._update_cost(t, self.holdings[t.asset]._subctractto_cost_history, t.cost)
         if config.debug:
             print(f"{Fore.YELLOW}Updated Holdings for {t.asset}: {self.holdings[t.asset]}")
 
