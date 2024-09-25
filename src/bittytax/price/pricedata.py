@@ -21,6 +21,7 @@ from ..config import config
 from ..constants import CACHE_DIR
 from .datasource import DataSourceBase
 from .exceptions import UnexpectedDataSourceError
+from datetime import date  
 
 import json
 
@@ -79,8 +80,7 @@ class PriceData:
     # Funzione per salvare le richieste fallite
     def save_failed_requests(self):
         with open(CACHE_FILE_PATH, "w") as f:
-            # Converti le tuple in lista, e le date in stringhe ISO
-            json.dump([list(item) if isinstance(item[-1], Date) else list(item[:-1]) + [item[-1].isoformat()] for item in self.failed_requests], f)
+            json.dump([list(item[:-1]) + [item[-1].isoformat()] if isinstance(item[-1], date) else list(item) for item in self.failed_requests], f)
 
     def get_historical_ds(
         self,
