@@ -4,7 +4,6 @@
 import os
 from decimal import Decimal
 from typing import List, Optional, Tuple
-from datetime import datetime, date
 
 from colorama import Fore
 
@@ -24,17 +23,12 @@ from .datasource import DataSourceBase
 from .exceptions import UnexpectedDataSourceError
 
 
-import json
-
-CACHE_FILE_PATH = os.path.join(CACHE_DIR, "failed_requests.json")  # Usa CACHE_DIR per la cache
-
 class PriceData:
     def __init__(
         self, data_sources_required: List[DataSourceName], price_tool: bool = False
     ) -> None:
         self.price_tool = price_tool
         self.data_sources = {}
-        self.failed_requests = self.load_failed_requests()
 
         if not os.path.exists(CACHE_DIR):
             os.mkdir(CACHE_DIR)
@@ -64,39 +58,6 @@ class PriceData:
             return None, AssetName("")
         raise UnexpectedDataSourceError(data_source, DataSourceBase.datasources_str())
 
-    # Funzione per convertire una stringa ISO in un oggetto Date
-    @staticmethod
-    def iso_to_date(iso_str: str) -> Date:
-        return Date(datetime.strptime(iso_str, "%Y-%m-%d").date())
-
-    # Funzione per convertire un oggetto Date in una stringa ISO
-    @staticmethod
-    def date_to_iso(date_obj: Date) -> str:
-        return date_obj.strftime("%Y-%m-%d")
-
-    # Funzione per caricare le richieste fallite
-    def load_failed_requests(self):
-        if os.path.exists(CACHE_FILE_PATH):
-            if os.stat(CACHE_FILE_PATH).st_size == 0:
-                return set()
-            with open(CACHE_FILE_PATH, "r") as f:
-                try:
-                    # Usa la funzione `iso_to_date()` per convertire le stringhe ISO in oggetti `Date`
-                    return set(tuple(x[:-1]) + (self.iso_to_date(x[-1]),) for x in json.load(f))
-                except json.JSONDecodeError:
-                    print("Errore di decodifica JSON. Ricreo il file 'failed_requests.json'.")
-                    os.remove(CACHE_FILE_PATH)  # Elimina il file corrotto
-                    return set()  # Restituisce un set vuoto
-        return set()
-
-    # Funzione per salvare le richieste fallite
-    def save_failed_requests(self):
-        with open(CACHE_FILE_PATH, "w") as f:
-            json.dump(
-                [list(item[:-1]) + [self.date_to_iso(item[-1])] if isinstance(item[-1], date) else list(item) for item in self.failed_requests],
-                f
-            )
-
     def get_historical_ds(
         self,
         data_source: DataSourceName,
@@ -105,46 +66,39 @@ class PriceData:
         timestamp: Timestamp,
         no_cache: bool = False,
     ) -> Tuple[Optional[Decimal], AssetName, SourceUrl]:
-        date_obj = Date(timestamp.date())  # Usa `Date` alias per la conversione
-        pair = TradingPair(asset + "/" + quote)
-
-        # Controlla se questa richiesta è già fallita
-        if (data_source, asset, quote, date_obj) in self.failed_requests:
-            print(f"Skipping request for {asset} on {date_obj} (previous failure).")
-            return None, AssetName(""), SourceUrl("")
-
         if data_source.upper() in self.data_sources:
             if asset in self.data_sources[data_source.upper()].assets:
+                date = Date(timestamp.date())
+                pair = TradingPair(asset + "/" + quote)
+
                 if not no_cache:
-                    # Controlla la cache
+                    # Check cache first
                     if (
                         pair in self.data_sources[data_source.upper()].prices
-                        and date_obj in self.data_sources[data_source.upper()].prices[pair]
+                        and date in self.data_sources[data_source.upper()].prices[pair]
                     ):
                         return (
-                            self.data_sources[data_source.upper()].prices[pair][date_obj]["price"],
+                            self.data_sources[data_source.upper()].prices[pair][date]["price"],
                             self.data_sources[data_source.upper()].assets[asset]["name"],
-                            self.data_sources[data_source.upper()].prices[pair][date_obj]["url"],
+                            self.data_sources[data_source.upper()].prices[pair][date]["url"],
                         )
 
-                # Esegue la richiesta per il prezzo storico
                 self.data_sources[data_source.upper()].get_historical(asset, quote, timestamp)
                 if (
                     pair in self.data_sources[data_source.upper()].prices
-                    and date_obj in self.data_sources[data_source.upper()].prices[pair]
+                    and date in self.data_sources[data_source.upper()].prices[pair]
                 ):
                     return (
-                        self.data_sources[data_source.upper()].prices[pair][date_obj]["price"],
+                        self.data_sources[data_source.upper()].prices[pair][date]["price"],
                         self.data_sources[data_source.upper()].assets[asset]["name"],
-                        self.data_sources[data_source.upper()].prices[pair][date_obj]["url"],
+                        self.data_sources[data_source.upper()].prices[pair][date]["url"],
                     )
-
-                # Se il prezzo non è disponibile, memorizza la richiesta fallita
-                print(f"Failed to retrieve price for {asset} on {date_obj}. Marking request as failed.")
-                self.failed_requests.add((data_source, asset, quote, date_obj))
-                self.save_failed_requests()  # Salva la richiesta fallita nel file
-                return None, self.data_sources[data_source.upper()].assets[asset]["name"], SourceUrl("")
-
+                return (
+                    None,
+                    self.data_sources[data_source.upper()].assets[asset]["name"],
+                    SourceUrl(""),
+                )
+            return None, AssetName(""), SourceUrl("")
         raise UnexpectedDataSourceError(data_source, DataSourceBase.datasources_str())
 
     def get_latest(

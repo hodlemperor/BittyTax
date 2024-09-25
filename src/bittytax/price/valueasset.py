@@ -195,11 +195,11 @@ class ValueAsset:
             asset, QuoteSymbol("BTC") if asset != "BTC" else target_ccy, timestamp, no_cache
         )
     
-        # Se l'asset è direttamente disponibile in target_ccy (ad esempio BTC/EUR)
+        # Se l'asset ? direttamente disponibile in target_ccy (ad esempio BTC/EUR)
         if asset == "BTC" or asset in config.fiat_list:
             return asset_price_btc_or_ccy, name, data_source
 
-        # Se è necessaria la conversione da BTC alla valuta target
+        # Se ? necessaria la conversione da BTC alla valuta target
         if asset_price_btc_or_ccy is not None:
             # Ottieni il prezzo di BTC nella valuta target (ad esempio BTC/EUR)
             btc_to_target_price, name2, data_source2, url2 = self.price_data.get_historical(
@@ -210,5 +210,5 @@ class ValueAsset:
                 asset_price_in_target_ccy = asset_price_btc_or_ccy * btc_to_target_price
                 return asset_price_in_target_ccy, name2, data_source2
 
-        # Se non è possibile ottenere il prezzo
+        # Se non ? possibile ottenere il prezzo
         return None, name, data_source
