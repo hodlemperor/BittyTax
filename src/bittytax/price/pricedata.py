@@ -124,7 +124,7 @@ class PriceData:
                         self.data_sources[data_source.upper()].prices[pair][date]["url"],
                     )
 
-                # Se il prezzo non è disponibile, memorizza la richiesta fallita
+                # Se il prezzo non disponibile, memorizza la richiesta fallita
                 print(f"Failed to retrieve price for {asset} on {date}. Marking request as failed.")
                 self.failed_requests.add((data_source, asset, quote, date))
                 self.save_failed_requests()  # Salva la richiesta fallita nel file
