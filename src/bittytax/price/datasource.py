@@ -556,11 +556,15 @@ class CoinGecko(DataSourceBase):
         timestamp: Timestamp,
         asset_id: AssetId = AssetId(""),
     ) -> Optional[Decimal]:
+        # Se il timestamp è un oggetto datetime, convertirlo in timestamp (secondi dall'epoca UNIX)
+        if isinstance(timestamp, datetime):
+            timestamp = int(timestamp.timestamp())
+
         # Se non abbiamo un asset_id, otteniamolo dagli asset disponibili
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
 
-        # Convertiamo il timestamp in una data nel formato richiesto (gg-mm-aaaa)
+        # Convertiamo il timestamp in una stringa di data nel formato richiesto (gg-mm-aaaa)
         date_str = datetime.utcfromtimestamp(timestamp).strftime('%d-%m-%Y')
 
         # Costruiamo l'URL per richiedere la cronologia di quel giorno specifico
@@ -575,7 +579,6 @@ class CoinGecko(DataSourceBase):
         # Se i dati non sono disponibili, logghiamo e restituiamo None
         print(f"Warning: No historical price found for asset {asset} on {date_str}")
         return None
-
 
 class CoinPaprika(DataSourceBase):
     MAX_DAYS = 5000
