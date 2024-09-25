@@ -179,11 +179,11 @@ class ValueAsset:
             )
 
     # Funzione per gestire la richiesta con retry, verifica delle chiavi e fallback
-    def get_data_with_retry(asset, quote, timestamp, attempts=3, delay=5, no_cache=False):
+    def get_data_with_retry(self, asset, quote, timestamp, attempts=3, delay=5, no_cache=False):
         for attempt in range(attempts):
             try:
                 # Effettua la richiesta per ottenere i dati
-                json_resp = price_data.get_historical(asset, quote, timestamp, no_cache)
+                json_resp = self.price_data.get_historical(asset, quote, timestamp, no_cache)
 
                 # Verifica che le chiavi "Response" e "Type" siano presenti
                 if "Response" in json_resp and json_resp["Response"] == "Success" and json_resp.get("Type") == 2:
@@ -216,7 +216,7 @@ class ValueAsset:
         :return: Il prezzo storico nella valuta richiesta, il nome dell'asset e la fonte dei dati.
         """
         # Prova a ottenere il prezzo storico dell'asset rispetto a BTC o alla valuta configurata
-        asset_price_btc_or_ccy, name, url = get_data_with_retry(asset, QuoteSymbol("BTC") if asset != "BTC" else target_ccy, timestamp, no_cache=no_cache)
+        asset_price_btc_or_ccy, name, url = self.get_data_with_retry(asset, QuoteSymbol("BTC") if asset != "BTC" else target_ccy, timestamp, no_cache=no_cache)
 
         # Se il prezzo è disponibile direttamente in target_ccy (esempio BTC/EUR)
         if asset == "BTC" or asset in config.fiat_list:
@@ -225,7 +225,7 @@ class ValueAsset:
         # Se è necessaria la conversione da BTC alla valuta target
         if asset_price_btc_or_ccy is not None:
             # Ottieni il prezzo di BTC nella valuta target (ad esempio BTC/EUR)
-            btc_to_target_price, name2, url2 = get_data_with_retry(AssetSymbol("BTC"), target_ccy, timestamp, no_cache=no_cache)
+            btc_to_target_price, name2, url2 = self.get_data_with_retry(AssetSymbol("BTC"), target_ccy, timestamp, no_cache=no_cache)
             if btc_to_target_price is not None:
                 # Converti il prezzo dell'asset nella valuta target
                 asset_price_in_target_ccy = asset_price_btc_or_ccy * btc_to_target_price
