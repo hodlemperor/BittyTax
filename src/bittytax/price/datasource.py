@@ -555,25 +555,26 @@ class CoinGecko(DataSourceBase):
         quote: QuoteSymbol,
         timestamp: Timestamp,
         asset_id: AssetId = AssetId(""),
-    ) -> None:
+    ) -> Optional[Decimal]:
+        # Se non abbiamo un asset_id, otteniamolo dagli asset disponibili
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
 
-        url = f"{self.api_root}/coins/{asset_id}/market_chart?vs_currency={quote}&days=max"
+        # Convertiamo il timestamp in una data nel formato richiesto (gg-mm-aaaa)
+        date_str = datetime.utcfromtimestamp(timestamp).strftime('%d-%m-%Y')
+
+        # Costruiamo l'URL per richiedere la cronologia di quel giorno specifico
+        url = f"{self.api_root}/coins/{asset_id}/history?date={date_str}&localization=false"
         json_resp = self.get_json(url)
-        pair = self.pair(asset, quote)
-        if "prices" in json_resp:
-            self.update_prices(
-                pair,
-                {
-                    Date(datetime.utcfromtimestamp(p[0] / 1000).date()): {
-                        "price": Decimal(repr(p[1])) if p[1] else None,
-                        "url": SourceUrl(url),
-                    }
-                    for p in json_resp["prices"]
-                },
-                timestamp,
-            )
+    
+        # Verifichiamo che i dati siano disponibili nel campo "market_data"
+        if "market_data" in json_resp and "current_price" in json_resp["market_data"]:
+            # Restituiamo il prezzo nel formato decimale
+            return Decimal(json_resp["market_data"]["current_price"].get(quote.lower(), 0))
+    
+        # Se i dati non sono disponibili, logghiamo e restituiamo None
+        print(f"Warning: No historical price found for asset {asset} on {date_str}")
+        return None
 
 
 class CoinPaprika(DataSourceBase):
