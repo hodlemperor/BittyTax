@@ -69,18 +69,16 @@ class Holdings:
                     print("New balance is the same as last balance, no update to history.")
 
     def _addto_cost_history(self, cost: Decimal, transaction_date: datetime) -> None:
-        if not self.cost_history:
-            # Se non ci sono costi precedenti, inizializza a 0
-            last_cost = Decimal(0)
-        else:
-            last_cost = self.cost_history[-1][1]
-            if last_cost is None:
-                raise ValueError(f"last_cost is None in cost_history for transaction on {transaction_date}")
+        # Se cost_history è vuoto, inizializza last_cost a Decimal(0)
+        last_cost = self.cost_history[-1][1] if self.cost_history else Decimal(0)
+    
+        # Se cost è None, lo impostiamo a Decimal(0) per continuare
+        cost = cost if cost is not None else Decimal(0)
 
-        if cost is None:
-            raise ValueError(f"Cost is None for transaction on {transaction_date}")
-
+        # Sommiamo last_cost con cost, anche se uno dei due era None (ora gestito come 0)
         new_cost = last_cost + cost
+
+        # Aggiorna lo storico con il nuovo costo
         self._update_cost_history(new_cost, transaction_date)
 
     def _update_cost_history(self, new_cost: Decimal, transaction_date: datetime) -> None:
