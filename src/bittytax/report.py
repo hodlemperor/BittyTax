@@ -333,7 +333,7 @@ class ReportLog:
         price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]],
         holdings_report: Optional[HoldingsReportRecord],
         yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]],
-        daily_holdings_report: Optional[Dict[Year, Dict[date, DaylyReportRecord]],
+        daily_holdings_report: Optional[Dict[Year, Dict[date, DaylyReportRecord]]],
     ) -> None:
         print(f"{Fore.WHITE}tax report output:")
         self._audit(audit)
