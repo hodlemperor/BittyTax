@@ -183,12 +183,12 @@ class ValueAsset:
             # Effettua la richiesta per ottenere i dati
             json_resp = self.price_data.get_historical(asset, quote, timestamp, no_cache)
 
-            # Verifica che le chiavi "Response" e "Type" siano presenti
-            if "Response" in json_resp and json_resp["Response"] == "Success" and json_resp.get("Type") == 2:
-                # Se la risposta è valida, restituisci i dati richiesti
-                return json_resp["Data"], json_resp.get("Name"), json_resp.get("Url")
+            # Verifica se la risposta è una tupla (come nel caso descritto)
+            if isinstance(json_resp, tuple) and len(json_resp) == 4:
+                # Restituisce direttamente i valori se il formato è corretto
+                return json_resp[0], json_resp[1], json_resp[3]
             else:
-                # Se la risposta non è valida, stampa un messaggio di errore
+                # Se la risposta non è nel formato atteso, stampa un messaggio di errore
                 print(f"Formato di risposta inatteso: {json_resp}")
                 raise KeyError("Risposta non valida")
     
