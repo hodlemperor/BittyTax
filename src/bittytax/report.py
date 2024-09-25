@@ -251,7 +251,7 @@ class ReportLog:
         price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
         yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]] = None,
-        self.daily_holdings_report: Optional[Dict[Year, Dict[date, DaylyReportRecord]]] = {}
+        daily_holdings_report: Optional[Dict[Year, Dict[date, DaylyReportRecord]]] = {},
     ) -> None:
         if args.audit_only:
             self._audit(audit)
