@@ -72,40 +72,14 @@ class DataSourceBase:
     def get_json(self, url: str) -> Any:
         if config.debug:
             print(f"{Fore.YELLOW}price: GET {url} {list(self.headers.keys())}")
-    
-        try:
-            response = requests.get(url, headers=self.headers, timeout=self.TIME_OUT)
-        
+
+        response = requests.get(url, headers=self.headers, timeout=self.TIME_OUT)
+
+        if response.status_code in [401, 402, 403, 429, 502, 503, 504]:
             response.raise_for_status()
 
-            if response:
-                return response.json()
-    
-        except requests.exceptions.HTTPError as http_err:
-            if response.status_code == 401:
-                print(f"Error 401: Unauthorized for URL: {url}")
-            elif response.status_code == 404:
-                print(f"Error 404: Resource not found for URL: {url}")
-            elif response.status_code == 429:
-                print(f"Error 429: Request limit exceeded for URL: {url}")
-            elif response.status_code >= 500:
-                print(f"Server error ({response.status_code}) for l'URL: {url}")
-            else:
-                print(f"Unknown HTTP Error: {http_err}")
-            return {}
-
-        except requests.exceptions.ConnectionError:
-            print(f"Connection Error: Unable to connect to{url}")
-            return {}
-
-        except requests.exceptions.Timeout:
-            print(f"Timeout: The server did not respond in time for the URL: {url}")
-            return {}
-
-        except requests.exceptions.RequestException as err:
-            print(f"HTTP request error: {err}")
-            return {}
-
+        if response:
+            return response.json()
         return {}
 
     def update_prices(
@@ -555,32 +529,25 @@ class CoinGecko(DataSourceBase):
         quote: QuoteSymbol,
         timestamp: Timestamp,
         asset_id: AssetId = AssetId(""),
-    ) -> Optional[Decimal]:
-        # Se il timestamp è un oggetto datetime, convertirlo in timestamp (secondi dall'epoca UNIX)
-        if isinstance(timestamp, datetime):
-            timestamp = int(timestamp.timestamp())
-
-        # Se non abbiamo un asset_id, otteniamolo dagli asset disponibili
+    ) -> None:
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
 
-        # Convertiamo il timestamp in una stringa di data nel formato richiesto (gg-mm-aaaa)
-        date_str = datetime.utcfromtimestamp(timestamp).strftime('%d-%m-%Y')
-
-        # Costruiamo l'URL per richiedere la cronologia di quel giorno specifico
-        url = f"{self.api_root}/coins/{asset_id}/history?date={date_str}&localization=false"
+        url = f"{self.api_root}/coins/{asset_id}/market_chart?vs_currency={quote}&days=max"
         json_resp = self.get_json(url)
-    
-        # Verifica che la risposta contenga market_data e current_price
-        if "market_data" in json_resp and "current_price" in json_resp["market_data"]:
-            # Estrai il prezzo per la valuta specificata (es. 'eur', 'btc', etc.)
-            price = json_resp["market_data"]["current_price"].get(quote.lower())
-            if price is not None:
-                return Decimal(price)
-    
-        # Se i dati non sono disponibili, logghiamo e restituiamo None
-        print(f"Warning: No historical price found for asset {asset} on {date_str}")
-        return None
+        pair = self.pair(asset, quote)
+        if "prices" in json_resp:
+            self.update_prices(
+                pair,
+                {
+                    Date(datetime.utcfromtimestamp(p[0] / 1000).date()): {
+                        "price": Decimal(repr(p[1])) if p[1] else None,
+                        "url": SourceUrl(url),
+                    }
+                    for p in json_resp["prices"]
+                },
+                timestamp,
+            )
 
 
 class CoinPaprika(DataSourceBase):
