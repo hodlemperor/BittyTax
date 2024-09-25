@@ -83,6 +83,8 @@ class YearlyReportRecord(TypedDict):
 class DaylyReportRecord(TypedDict):
     btc_balance: Decimal
     eur_value: Decimal
+    missing_price: bool
+    quantity: Decimal
 
 class CapitalGainsIndividual(TypedDict):  # pylint: disable=too-few-public-methods
     allowance: Decimal
