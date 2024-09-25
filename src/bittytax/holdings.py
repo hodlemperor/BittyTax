@@ -68,12 +68,33 @@ class Holdings:
                 if config.debug:
                     print("New balance is the same as last balance, no update to history.")
 
+    def _addto_cost_history(self, cost: Decimal, transaction_date: datetime) -> None:
+        last_cost = self.cost_history[-1][1]  # Ottiene l'ultimo costo salvato nello storico
+        new_cost = last_cost + cost  # Somma il costo all'ultimo valore storico
+        self._update_cost_history(new_cost, transaction_date)  # Aggiorna lo storico
+
+    def _subctractto_cost_history(self, cost: Decimal, transaction_date: datetime) -> None:
+        last_cost = self.cost_history[-1][1]  # Ottiene l'ultimo costo salvato nello storico
+        new_cost = last_cost - cost  # Sottrae il costo dall'ultimo valore storico
+        self._update_cost_history(new_cost, transaction_date)  # Aggiorna lo storico
+
+    def _update_cost_history(self, new_cost: Decimal, transaction_date: datetime) -> None:
+        if self.cost_history[-1][0] is None:
+            # Inizializza il primo record
+            self.cost_history[-1] = (transaction_date.date(), new_cost)
+        else:
+            last_cost = self.cost_history[-1][1]
+            if new_cost != last_cost:
+                # Aggiunge un nuovo record solo se il costo è cambiato
+                self.cost_history.append((transaction_date.date(), new_cost))
+
 
     def add_tokens(self, quantity: Decimal, cost: Decimal, fees: Decimal, is_deposit: bool, transaction_date: datetime) -> None:
         self.quantity += quantity
         self.cost += cost
         self.fees += fees
         self._addto_balance_history(quantity, transaction_date) 
+        self._addto_cost_history(cost, transaction_date)
 
         if is_deposit:
             self.deposits += 1
@@ -95,6 +116,7 @@ class Holdings:
         self.cost -= cost
         self.fees -= fees
         self._subctractto_balance_history(quantity, transaction_date) 
+        self._subctractto_cost_history(cost, transaction_date)
 
         if is_withdrawal:
             self.withdrawals += 1

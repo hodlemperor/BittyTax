@@ -39,6 +39,7 @@ from .tax import (
     HoldingsReportRecord,
     YearlyReportRecord,
     TaxReportRecord,
+    DaylyReportRecord,
 )
 from .tax_event import TaxEventCapitalGains
 from .version import __version__
@@ -63,6 +64,7 @@ class ReportPdf:
         price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
         yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]] = None,
+        daily_holdings_report: Optional[Dict[Year, Dict[date, DaylyReportRecord]]] = {}
     ) -> None:
         self.env = jinja2.Environment(loader=jinja2.PackageLoader("bittytax", "templates"))
 
@@ -120,6 +122,7 @@ class ReportPdf:
                     "price_report": price_report,
                     "holdings_report": holdings_report,
                     "yearly_holdings_report": yearly_holdings_report,
+                    "daily_holdings_report": daily_holdings_report,
                     "matching_method": config.matching_method,
                     "decimal": decimal,
                 }
@@ -248,6 +251,7 @@ class ReportLog:
         price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
         yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]] = None,
+        self.daily_holdings_report: Optional[Dict[Year, Dict[date, DaylyReportRecord]]] = {}
     ) -> None:
         if args.audit_only:
             self._audit(audit)
@@ -266,7 +270,7 @@ class ReportLog:
             if price_report is None:
                 raise RuntimeError("Missing price_report")
 
-            self._tax_full(args.tax_rules, audit, tax_report, price_report, holdings_report, yearly_holdings_report)
+            self._tax_full(args.tax_rules, audit, tax_report, price_report, holdings_report, yearly_holdings_report, daily_holdings_report)
 
     def _tax_summary(
         self,
@@ -329,6 +333,7 @@ class ReportLog:
         price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]],
         holdings_report: Optional[HoldingsReportRecord],
         yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]],
+        daily_holdings_report: Optional[Dict[Year, Dict[date, DaylyReportRecord]],
     ) -> None:
         print(f"{Fore.WHITE}tax report output:")
         self._audit(audit)
@@ -386,6 +391,10 @@ class ReportLog:
 
         if yearly_holdings_report:
             self._yearly_holdings(yearly_holdings_report)
+
+        # da implementare
+        #if daily_holdings_report:
+        #    self._daily_holdings(daily_holdings_report)
 
     def _audit(self, audit: AuditRecords) -> None:
         print(f"{H1}Audit{_H1}")

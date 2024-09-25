@@ -196,7 +196,7 @@ def main() -> None:
             parser.exit(message=f"{ERROR} {e}\n")
 
         if args.nopdf:
-            ReportLog(args, audit, tax.tax_report, value_asset.price_report, tax.holdings_report, tax.yearly_holdings_report)
+            ReportLog(args, audit, tax.tax_report, value_asset.price_report, tax.holdings_report, tax.yearly_holdings_report, tax.dayly_holdings_report)
         else:
             if args.format == ACCT_FORMAT_PDF:
                 ReportPdf(
@@ -207,6 +207,7 @@ def main() -> None:
                     value_asset.price_report,
                     tax.holdings_report,
                     tax.yearly_holdings_report,
+                    tax.dayly_holdings_report,
                 )
             elif args.format == ACCT_FORMAT_IRS:
                 output_pdf = OutputIrs(args.output_filename, tax.tax_report)
@@ -338,6 +339,7 @@ def _do_each_tax_year(
         if not summary_only:
             tax.calculate_yearly_holdings(value_asset, tax_year)
             tax.check_holding_threshold(value_asset, tax_year)
+            tax.calculate_daily_holdings_and_average(value_asset, tax_year)
 
     else:
         # Calculate for all years
@@ -363,6 +365,7 @@ def _do_each_tax_year(
             for year in sorted(tax.tax_events):
                 if year in CCG.CG_DATA_INDIVIDUAL:
                     tax.check_holding_threshold(value_asset, year)
+                    tax.calculate_daily_holdings_and_average(value_asset, year)
 
 
 def _do_export(transaction_records: List[TransactionRecord]) -> None:

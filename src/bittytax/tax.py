@@ -533,12 +533,18 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             print(f"{Fore.GREEN}Processing {operation.__name__.capitalize()} for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
         operation(t.quantity, t.timestamp)
 
+    def _update_cost(self, t, operation, cost):
+        if config.debug:
+            print(f"{Fore.GREEN}Updating cost for {t.asset}, Cost: {cost}, Timestamp: {t.timestamp}")
+        operation(cost, t.timestamp)  # Chiamiamo l'operazione (add o subtract cost history)
+
     def _process_transaction(self, t):
         if isinstance(t, Buy):
             self._update_balance(t, self.holdings[t.asset]._addto_balance_history)
+            self._update_cost(t, self.holdings[t.asset]._addto_cost_history, t.cost)
         elif isinstance(t, Sell):
             self._update_balance(t, self.holdings[t.asset]._subctractto_balance_history)
-
+            self._update_cost(t, self.holdings[t.asset]._subctractto_cost_history, t.cost)
         if config.debug:
             print(f"{Fore.YELLOW}Updated Holdings for {t.asset}: {self.holdings[t.asset]}")
 
