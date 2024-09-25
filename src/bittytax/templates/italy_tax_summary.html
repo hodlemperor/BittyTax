@@ -42,26 +42,26 @@
 
 <!-- Case where the threshold has been exceeded -->
 {% if tax_year <= 2022 and threshold_report is not none and threshold_report.exceeded_threshold %}
-    <div style="color: red;">
-        <strong>Warning:</strong> The crypto holdings exceeded €51,645.69 for at least 7 consecutive working days in {{ config.format_tax_year(tax_year) }}.
-    </div>
-    <p>Consecutive working days above threshold: {{ threshold_report.consecutive_working_days }}</p>
-    <p>Days above threshold: Started day: {{ threshold_report.days_above_threshold[0][0] | format_date("%d-%m-%Y") }} with value: {{ threshold_report.days_above_threshold[0][1]|valuefilter }}</p>
-    <p></p>
+<div style="color: red;">
+    <strong>Warning:</strong> The crypto holdings exceeded €51,645.69 for at least 7 consecutive working days in {{ config.format_tax_year(tax_year) }}.
+</div>
+<p>Consecutive working days above threshold: {{ threshold_report.consecutive_working_days }}</p>
+<p>Days above threshold: Started day: {{ threshold_report.days_above_threshold[0][0] | format_date("%d-%m-%Y") }} with value: {{ threshold_report.days_above_threshold[0][1]|valuefilter }}</p>
+<p></p>
 
 <!-- Case where the threshold has not been exceeded -->
 {% elif tax_year <= 2022 and threshold_report is not none and not threshold_report.exceeded_threshold and threshold_report.missing_prices == False %}
-    <div style="color: green;">
-        <strong>Notice:</strong> The crypto holdings did not exceed €51,645.69 for at least 7 consecutive working days in {{ config.format_tax_year(tax_year) }}.
-    </div>
+<div style="color: green;">
+    <strong>Notice:</strong> The crypto holdings did not exceed €51,645.69 for at least 7 consecutive working days in {{ config.format_tax_year(tax_year) }}.
+</div>
 {% endif %}
 
 <!-- Case where prices are missing and it cannot be determined whether the threshold has been exceeded -->
 {% if threshold_report is not none and threshold_report.missing_prices is not none %}
     {% if not threshold_report.exceeded_threshold and threshold_report.missing_prices == True %}
-        <div style="color: orange;">
-            <strong>Notice:</strong> It was not possible to determine whether holdings exceeded €51,645.69 for at least 7 consecutive working days due to missing prices.
-        </div>
+<div style="color: orange;">
+    <strong>Notice:</strong> It was not possible to determine whether holdings exceeded €51,645.69 for at least 7 consecutive working days due to missing prices.
+</div>
     {% endif %}
 {% endif %}
 
@@ -124,14 +124,23 @@
             <th align="left">Date</th>
             <th align="right">BTC Balance</th>
             <th align="right">EUR Value</th>
+            <th align="right">Missing Price</th> <!-- Nuova colonna per il prezzo mancante -->
         </tr>
     </thead>
     <tbody>
         {% for report_date, daily_data in daily_holdings_report[tax_year].items() if report_date != 'average' %}
-        <tr>
+        <tr {% if daily_data.missing_price %} class="warning" {% endif %}>
+            <!-- Aggiungi classe se il prezzo è mancante -->
             <td align="left">{{ report_date | format_date("%d-%m-%Y") }}</td>
             <td align="right">{{ daily_data.btc_balance | format_decimal }}</td>
             <td align="right">{{ daily_data.eur_value | valuefilter }}</td>
+            <td align="right">
+                {% if daily_data.missing_price %}
+                <span class="missing-price-icon">⚠️</span> <!-- Icona per prezzo mancante -->
+                {% else %}
+                No
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>
@@ -145,7 +154,3 @@
 {% else %}
 <p>No daily holdings report available for the year {{ tax_year }}.</p>
 {% endif %}
-    {% else %}
-<p>No data available for the year {{ tax_year }}.</p>
-    {% endif %}
-{% endfor %}
