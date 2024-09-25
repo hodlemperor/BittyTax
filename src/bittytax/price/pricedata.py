@@ -93,7 +93,7 @@ class PriceData:
         date = Date(timestamp.date())
         pair = TradingPair(asset + "/" + quote)
 
-        # Controlla se questa richiesta è già fallita
+        # Controlla se questa richiesta fallita
         if (data_source, asset, quote, date) in self.failed_requests:
             print(f"Skipping request for {asset} on {date} (previous failure).")
             return None, AssetName(""), SourceUrl("")
