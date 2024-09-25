@@ -70,7 +70,7 @@ class PriceData:
                 return set()
             with open(CACHE_FILE_PATH, "r") as f:
                 try:
-                    return set(tuple(x[:-1]) + (Date.fromisoformat(x[-1]),) for x in json.load(f))
+                    return set(tuple(x[:-1]) + (date.fromisoformat(x[-1]),) for x in json.load(f))
                 except json.JSONDecodeError:
                     print("Errore di decodifica JSON. Ricreo il file 'failed_requests.json'.")
                     os.remove(CACHE_FILE_PATH)  # Elimina il file corrotto
