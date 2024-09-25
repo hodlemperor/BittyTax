@@ -177,3 +177,38 @@ class ValueAsset:
                 price_ccy=price_ccy,
                 price_btc=price_btc,
             )
+
+    def get_historical_price_with_conversion(
+        self, asset: AssetSymbol, timestamp: Timestamp, target_ccy: AssetSymbol, no_cache: bool = False
+    ) -> Tuple[Optional[Decimal], AssetName, DataSourceName]:
+        """
+        Ottiene il prezzo storico di un asset rispetto a una valuta target (come EUR).
+    
+        :param asset: Simbolo dell'asset (ad esempio BTC).
+        :param timestamp: Il timestamp per ottenere il prezzo storico.
+        :param target_ccy: Valuta di riferimento (ad esempio EUR).
+        :param no_cache: Booleano per disabilitare la cache.
+        :return: Il prezzo storico nella valuta richiesta, il nome dell'asset e la fonte dei dati.
+        """
+        # Recupero del prezzo dell'asset rispetto a BTC o alla valuta configurata
+        asset_price_btc_or_ccy, name, data_source, url = self.price_data.get_historical(
+            asset, QuoteSymbol("BTC") if asset != "BTC" else target_ccy, timestamp, no_cache
+        )
+    
+        # Se l'asset è direttamente disponibile in target_ccy (ad esempio BTC/EUR)
+        if asset == "BTC" or asset in config.fiat_list:
+            return asset_price_btc_or_ccy, name, data_source
+
+        # Se è necessaria la conversione da BTC alla valuta target
+        if asset_price_btc_or_ccy is not None:
+            # Ottieni il prezzo di BTC nella valuta target (ad esempio BTC/EUR)
+            btc_to_target_price, name2, data_source2, url2 = self.price_data.get_historical(
+                AssetSymbol("BTC"), target_ccy, timestamp, no_cache
+            )
+            if btc_to_target_price is not None:
+                # Converti il prezzo dell'asset nella valuta target
+                asset_price_in_target_ccy = asset_price_btc_or_ccy * btc_to_target_price
+                return asset_price_in_target_ccy, name2, data_source2
+
+        # Se non è possibile ottenere il prezzo
+        return None, name, data_source
