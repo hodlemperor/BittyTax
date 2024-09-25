@@ -882,7 +882,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     if holding.is_crypto():
                         # Get the balance for that date
                         quantity = holding.get_balance_at_date(current_date)
-                        price_at_date, _, _ = value_asset.get_historical_price(asset, current_datetime)
+                        price_at_date, _, _ = value_asset.get_historical_price(asset, current_datetime, no_cache=False)
 
                         # Add the total value
                         if price_at_date is not None:
@@ -971,7 +971,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     btc_value = quantity
                 elif asset_symbol == 'EUR':
                     # Ottieni il tasso di cambio storico di BTC in EUR
-                    btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime, 'EUR')
+                    btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime, 'EUR', no_cache=False)
         
                     # Assicurati che il prezzo non sia None
                     if btc_to_eur_price is None:
@@ -986,7 +986,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         btc_value = quantity / btc_to_eur_price
                 else:
                     # Ottieni il prezzo storico di BTC
-                    btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_datetime, 'BTC')
+                    btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_datetime, 'BTC', no_cache=False)
         
                     # Controlla se btc_price è None e assegna un valore predefinito
                     if btc_price is None:
@@ -1007,7 +1007,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 self.daily_holdings_report[tax_year][current_date] = self.daily_holdings_report[tax_year][current_date - timedelta(days=1)]
             else:
                 # Il saldo è cambiato, quindi calcola il valore totale in EUR utilizzando il prezzo storico di BTC in EUR
-                btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime, 'EUR')
+                btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime, 'EUR', no_cache=False)
                 daily_eur_total = daily_btc_total * btc_to_eur_price
 
                 # Salva il saldo giornaliero in BTC e il valore in EUR nel report
