@@ -196,7 +196,7 @@ def main() -> None:
             parser.exit(message=f"{ERROR} {e}\n")
 
         if args.nopdf:
-            ReportLog(args, audit, tax.tax_report, value_asset.price_report, tax.holdings_report, tax.yearly_holdings_report, tax.dayly_holdings_report)
+            ReportLog(args, audit, tax.tax_report, value_asset.price_report, tax.holdings_report, tax.yearly_holdings_report, tax.daily_holdings_report)
         else:
             if args.format == ACCT_FORMAT_PDF:
                 ReportPdf(
@@ -207,7 +207,7 @@ def main() -> None:
                     value_asset.price_report,
                     tax.holdings_report,
                     tax.yearly_holdings_report,
-                    tax.dayly_holdings_report,
+                    tax.daily_holdings_report,
                 )
             elif args.format == ACCT_FORMAT_IRS:
                 output_pdf = OutputIrs(args.output_filename, tax.tax_report)

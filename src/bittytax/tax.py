@@ -80,7 +80,7 @@ class YearlyReportRecord(TypedDict):
     assets: Dict[AssetSymbol, YearlyReportAsset]
     totals: YearlyReportTotal
 
-class DaylyReportRecord(TypedDict):
+class dailyReportRecord(TypedDict):
     btc_balance: Decimal
     eur_value: Decimal
     missing_price: bool
@@ -194,7 +194,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         self.tax_report: Dict[Year, TaxReportRecord] = {}
         self.holdings_report: Optional[HoldingsReportRecord] = None
         self.yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]] = None
-        self.daily_holdings_report: Optional[Dict[Year, Dict[date, DaylyReportRecord]]] = {}
+        self.daily_holdings_report: Optional[Dict[Year, Dict[date, dailyReportRecord]]] = {}
 
     def order_transactions(self) -> None:
         if config.debug:
@@ -1011,7 +1011,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 daily_eur_total = daily_btc_total * btc_to_eur_price
 
                 # Salva il saldo giornaliero in BTC e il valore in EUR nel report
-                self.daily_holdings_report[tax_year][current_date] = DaylyReportRecord(
+                self.daily_holdings_report[tax_year][current_date] = dailyReportRecord(
                     btc_balance=daily_btc_total,
                     eur_value=daily_eur_total
                 )

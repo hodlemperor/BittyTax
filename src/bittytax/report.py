@@ -39,7 +39,7 @@ from .tax import (
     HoldingsReportRecord,
     YearlyReportRecord,
     TaxReportRecord,
-    DaylyReportRecord,
+    DailyReportRecord,
 )
 from .tax_event import TaxEventCapitalGains
 from .version import __version__
@@ -64,7 +64,7 @@ class ReportPdf:
         price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
         yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]] = None,
-        daily_holdings_report: Optional[Dict[Year, Dict[date, DaylyReportRecord]]] = {}
+        daily_holdings_report: Optional[Dict[Year, Dict[date, DailyReportRecord]]] = {}
     ) -> None:
         self.env = jinja2.Environment(loader=jinja2.PackageLoader("bittytax", "templates"))
 
@@ -251,7 +251,7 @@ class ReportLog:
         price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
         yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]] = None,
-        daily_holdings_report: Optional[Dict[Year, Dict[date, DaylyReportRecord]]] = {},
+        daily_holdings_report: Optional[Dict[Year, Dict[date, DailyReportRecord]]] = {},
     ) -> None:
         if args.audit_only:
             self._audit(audit)
@@ -333,7 +333,7 @@ class ReportLog:
         price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]],
         holdings_report: Optional[HoldingsReportRecord],
         yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]],
-        daily_holdings_report: Optional[Dict[Year, Dict[date, DaylyReportRecord]]],
+        daily_holdings_report: Optional[Dict[Year, Dict[date, DailyReportRecord]]],
     ) -> None:
         print(f"{Fore.WHITE}tax report output:")
         self._audit(audit)
