@@ -66,13 +66,15 @@ class PriceData:
     def load_failed_requests(self):
         if os.path.exists(CACHE_FILE_PATH):
             with open(CACHE_FILE_PATH, "r") as f:
-                return set(tuple(x) for x in json.load(f))  # Converti le tuple dalla lista JSON
+                # Converti le stringhe ISO delle date in oggetti Date
+                return set(tuple(x[:-1]) + (Date.fromisoformat(x[-1]),) for x in json.load(f))
         return set()
 
     # Funzione per salvare le richieste fallite
     def save_failed_requests(self):
         with open(CACHE_FILE_PATH, "w") as f:
-            json.dump(list(self.failed_requests), f)  # Converti il set in una lista prima di salvarlo
+            # Converti le tuple in lista, e le date in stringhe ISO
+            json.dump([list(item) if isinstance(item[-1], Date) else list(item[:-1]) + [item[-1].isoformat()] for item in self.failed_requests], f)
 
     def get_historical_ds(
         self,
