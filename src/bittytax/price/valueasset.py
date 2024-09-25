@@ -23,7 +23,7 @@ from ..bt_types import (
 from ..config import config
 from ..constants import WARNING
 from .pricedata import PriceData
-
+import time
 
 class VaPriceReport(TypedDict):  # pylint: disable=too-few-public-methods
     name: AssetName
@@ -178,6 +178,31 @@ class ValueAsset:
                 price_btc=price_btc,
             )
 
+    # Funzione per gestire la richiesta con retry, verifica delle chiavi e fallback
+    def get_data_with_retry(asset, quote, timestamp, attempts=3, delay=5, no_cache=False):
+        for attempt in range(attempts):
+            try:
+                # Effettua la richiesta per ottenere i dati
+                json_resp = price_data.get_historical(asset, quote, timestamp, no_cache)
+
+                # Verifica che le chiavi "Response" e "Type" siano presenti
+                if "Response" in json_resp and json_resp["Response"] == "Success" and json_resp.get("Type") == 2:
+                    # Se la risposta è valida, restituisci i dati richiesti
+                    return json_resp["Data"], json_resp.get("Name"), json_resp.get("Url")
+                else:
+                    # Se la risposta non è valida, stampa un messaggio di errore
+                    print(f"Formato di risposta inatteso: {json_resp}")
+                    raise KeyError("Risposta non valida")
+        
+            except KeyError as e:
+                # Log dell'errore e tentativo di retry
+                print(f"Errore durante il tentativo {attempt + 1}: {e}. Ritento tra {delay} secondi...")
+                time.sleep(delay)
+    
+        # Se tutti i tentativi falliscono, utilizza una logica di fallback
+        print(f"Impossibile ottenere dati per {asset} in {quote} alla data {timestamp}. Utilizzo dei valori di fallback.")
+        return None, None, None
+
     def get_historical_price_with_conversion(
         self, asset: AssetSymbol, timestamp: Timestamp, target_ccy: AssetSymbol, no_cache: bool = False
     ) -> Tuple[Optional[Decimal], AssetName, DataSourceName]:
@@ -190,25 +215,21 @@ class ValueAsset:
         :param no_cache: Booleano per disabilitare la cache.
         :return: Il prezzo storico nella valuta richiesta, il nome dell'asset e la fonte dei dati.
         """
-        # Recupero del prezzo dell'asset rispetto a BTC o alla valuta configurata
-        asset_price_btc_or_ccy, name, data_source, url = self.price_data.get_historical(
-            asset, QuoteSymbol("BTC") if asset != "BTC" else target_ccy, timestamp, no_cache
-        )
-    
-        # Se l'asset ? direttamente disponibile in target_ccy (ad esempio BTC/EUR)
-        if asset == "BTC" or asset in config.fiat_list:
-            return asset_price_btc_or_ccy, name, data_source
+        # Prova a ottenere il prezzo storico dell'asset rispetto a BTC o alla valuta configurata
+        asset_price_btc_or_ccy, name, url = get_data_with_retry(asset, QuoteSymbol("BTC") if asset != "BTC" else target_ccy, timestamp, no_cache=no_cache)
 
-        # Se ? necessaria la conversione da BTC alla valuta target
+        # Se il prezzo è disponibile direttamente in target_ccy (esempio BTC/EUR)
+        if asset == "BTC" or asset in config.fiat_list:
+            return asset_price_btc_or_ccy, name, url
+
+        # Se è necessaria la conversione da BTC alla valuta target
         if asset_price_btc_or_ccy is not None:
             # Ottieni il prezzo di BTC nella valuta target (ad esempio BTC/EUR)
-            btc_to_target_price, name2, data_source2, url2 = self.price_data.get_historical(
-                AssetSymbol("BTC"), target_ccy, timestamp, no_cache
-            )
+            btc_to_target_price, name2, url2 = get_data_with_retry(AssetSymbol("BTC"), target_ccy, timestamp, no_cache=no_cache)
             if btc_to_target_price is not None:
                 # Converti il prezzo dell'asset nella valuta target
                 asset_price_in_target_ccy = asset_price_btc_or_ccy * btc_to_target_price
-                return asset_price_in_target_ccy, name2, data_source2
+                return asset_price_in_target_ccy, name2, url2
 
-        # Se non ? possibile ottenere il prezzo
-        return None, name, data_source
+        # Se non è possibile ottenere il prezzo, utilizza valori di fallback
+        return None, name, url
