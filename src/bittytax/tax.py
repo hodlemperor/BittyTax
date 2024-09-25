@@ -969,6 +969,21 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 # Converti la quantità in BTC
                 if asset_symbol == 'BTC':
                     btc_value = quantity
+                elif asset_symbol == 'EUR':
+                    # Ottieni il tasso di cambio storico di BTC in EUR
+                    btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime, 'EUR')
+        
+                    # Assicurati che il prezzo non sia None
+                    if btc_to_eur_price is None:
+                        btc_to_eur_price = Decimal(0)  # Valore predefinito in caso di prezzo mancante
+                        # Contrassegna il giorno nel report come "prezzo mancante"
+                        self.daily_holdings_report[tax_year][current_date] = {
+                            'btc_balance': daily_btc_total,
+                            'missing_price': True  # Flag per indicare il prezzo mancante
+                        }
+                    else:
+                        # Converti EUR in BTC usando il prezzo di BTC in EUR
+                        btc_value = quantity / btc_to_eur_price
                 else:
                     # Ottieni il prezzo storico di BTC
                     btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_datetime, 'BTC')
