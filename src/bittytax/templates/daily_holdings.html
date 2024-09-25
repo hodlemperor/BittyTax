@@ -1,0 +1,51 @@
+﻿<h1>Tax Summary (Italy)</h1>
+
+{% for tax_year in tax_report|sort %}
+    {% if tax_year in yearly_holdings_report %}
+        {% set cgains = tax_report[tax_year]['CapitalGains'] %}
+        {% set margin = tax_report[tax_year]['MarginTrading'] %}
+
+<h2 style="text-align: center;">{{ config.format_tax_year(tax_year) }}</h2>
+
+<!-- report giornaliero -->
+<h3>Daily Holdings Report</h3>
+        {% if tax_year in daily_holdings_report %}
+<table repeat="1" width="100%" class="asset-table">
+    <thead>
+        <tr>
+            <th align="left">Date</th>
+            <th align="right">BTC Balance</th>
+            <th align="right">EUR Value</th>
+            <th align="right">Missing Price</th> <!-- Nuova colonna per il prezzo mancante -->
+        </tr>
+    </thead>
+    <tbody>
+        {% for report_date, daily_data in daily_holdings_report[tax_year].items() if report_date != 'average' %}
+        <tr {% if daily_data.missing_price %} class="warning" {% endif %}>
+            <!-- Aggiungi classe se il prezzo è mancante -->
+            <td align="left">{{ report_date | format_date("%d-%m-%Y") }}</td>
+            <td align="right">{{ daily_data.btc_balance | format_decimal }}</td>
+            <td align="right">{{ daily_data.eur_value | valuefilter }}</td>
+            <td align="right">
+                {% if daily_data.missing_price %}
+                <span class="missing-price-icon">⚠️</span> <!-- Icona per prezzo mancante -->
+                {% else %}
+                No
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Giacenza Media -->
+<h3>Average Balance</h3>
+<p>Average BTC Balance: {{ daily_holdings_report[tax_year]['average']['average_btc_balance'] | format_decimal }}</p>
+<p>Average EUR Value: {{ daily_holdings_report[tax_year]['average']['average_eur_value'] | valuefilter }}</p>
+
+        {% else %}
+<p>No daily holdings report available for the year {{ tax_year }}.</p>
+        {% endif %}
+
+    {% endif %}
+{% endfor %}

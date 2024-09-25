@@ -945,8 +945,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         end_datetime = datetime.combine(end_date, time.min)
         end_datetime = end_datetime.replace(tzinfo=timezone.utc)
 
-        previous_btc_total = None
-
         total_btc = Decimal(0)
         total_eur = Decimal(0)
         days_count = (end_date - start_date).days + 1
@@ -959,24 +957,18 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         while current_datetime <= end_datetime:
             daily_btc_total = Decimal(0)
 
-            # Flag per tracciare se il saldo è cambiato rispetto al giorno precedente
-            saldo_modificato = False
-
             for asset_symbol, holdings in self.holdings.items():
                 # Ottieni il saldo di quell'asset in quel giorno
                 quantity = holdings.get_balance_at_date(current_date)
-            
+        
                 # Converti la quantità in BTC o nella valuta target
                 if asset_symbol == 'BTC':
                     btc_value = quantity
                 elif asset_symbol == 'EUR':
                     # Ottieni il tasso di cambio storico di BTC in EUR
                     btc_to_eur_price, _, _ = value_asset.get_historical_price_with_conversion('BTC', current_datetime, 'EUR', no_cache=False)
-
-                    # Assicurati che il prezzo non sia None
                     if btc_to_eur_price is None:
-                        btc_to_eur_price = Decimal(0)  # Valore predefinito in caso di prezzo mancante
-                        # Contrassegna il giorno nel report come "prezzo mancante"
+                        btc_to_eur_price = Decimal(0)  # Gestione del prezzo mancante
                         self.daily_holdings_report[tax_year][current_date] = {
                             'btc_balance': daily_btc_total,
                             'missing_price': True  # Flag per indicare il prezzo mancante
@@ -987,11 +979,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 else:
                     # Ottieni il prezzo storico dell'asset rispetto a BTC
                     asset_to_btc_price, _, _ = value_asset.get_historical_price_with_conversion(asset_symbol, current_datetime, 'BTC', no_cache=False)
-
-                    # Controlla se asset_to_btc_price è None e assegna un valore predefinito
                     if asset_to_btc_price is None:
-                        asset_to_btc_price = Decimal(0)  # Valore predefinito quando il prezzo è mancante
-                        # Contrassegna il giorno nel report come "prezzo mancante"
+                        asset_to_btc_price = Decimal(0)  # Valore predefinito in caso di prezzo mancante
                         self.daily_holdings_report[tax_year][current_date] = {
                             'btc_balance': daily_btc_total,
                             'missing_price': True  # Flag per indicare il prezzo mancante
@@ -1001,27 +990,21 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
                 daily_btc_total += btc_value
 
-            # Confronta il saldo del giorno corrente con quello del giorno precedente
-            if previous_btc_total is not None and daily_btc_total == previous_btc_total:
-                # Il saldo è invariato, quindi possiamo evitare di ricalcolare
-                self.daily_holdings_report[tax_year][current_date] = self.daily_holdings_report[tax_year][current_date - timedelta(days=1)]
-            else:
-                # Il saldo è cambiato, quindi calcola il valore totale in EUR utilizzando il prezzo storico di BTC in EUR
-                btc_to_eur_price, _, _ = value_asset.get_historical_price_with_conversion('BTC', current_datetime, 'EUR', no_cache=False)
-                daily_eur_total = daily_btc_total * btc_to_eur_price
+            # Calcola il valore totale in EUR utilizzando il prezzo storico di BTC in EUR
+            btc_to_eur_price, _, _ = value_asset.get_historical_price_with_conversion('BTC', current_datetime, 'EUR', no_cache=False)
+            if btc_to_eur_price is None:
+                btc_to_eur_price = Decimal(0)  # Gestione del prezzo mancante
+            daily_eur_total = daily_btc_total * btc_to_eur_price
 
-                # Salva il saldo giornaliero in BTC e il valore in EUR nel report
-                self.daily_holdings_report[tax_year][current_date] = DailyReportRecord(
-                    btc_balance=daily_btc_total,
-                    eur_value=daily_eur_total
-                )
-                saldo_modificato = True
+            # Salva il saldo giornaliero in BTC e il valore in EUR nel report
+            self.daily_holdings_report[tax_year][current_date] = DailyReportRecord(
+                btc_balance=daily_btc_total,
+                eur_value=daily_eur_total
+            )
 
-            # Aggiorna il saldo totale solo se il saldo è cambiato
-            if saldo_modificato:
-                total_btc += daily_btc_total
-                total_eur += daily_eur_total
-                previous_btc_total = daily_btc_total
+            # Aggiungi i valori al totale per il calcolo della giacenza media
+            total_btc += daily_btc_total
+            total_eur += daily_eur_total
 
             # Incrementa la data di un giorno
             current_datetime += timedelta(days=1)
@@ -1038,6 +1021,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         }
 
         return self.daily_holdings_report[tax_year]['average']
+
 
 
 class CalculateCapitalGains:
