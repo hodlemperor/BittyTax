@@ -65,16 +65,15 @@ class PriceData:
     # Funzione per caricare le richieste fallite
     def load_failed_requests(self):
         if os.path.exists(CACHE_FILE_PATH):
-            # Controlla se il file è vuoto
             if os.stat(CACHE_FILE_PATH).st_size == 0:
-                return set()  # Restituisce un set vuoto se il file è vuoto
+                return set()
             with open(CACHE_FILE_PATH, "r") as f:
                 try:
-                    # Converti le stringhe ISO delle date in oggetti Date
                     return set(tuple(x[:-1]) + (Date.fromisoformat(x[-1]),) for x in json.load(f))
                 except json.JSONDecodeError:
-                    print("Errore nel parsing del file JSON. Il file potrebbe essere corrotto.")
-                    return set()  # Restituisce un set vuoto se c'è un errore di decoding
+                    print("Errore di decodifica JSON. Ricreo il file 'failed_requests.json'.")
+                    os.remove(CACHE_FILE_PATH)  # Elimina il file corrotto
+                    return set()  # Restituisce un set vuoto
         return set()
 
     # Funzione per salvare le richieste fallite
