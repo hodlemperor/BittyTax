@@ -4,7 +4,7 @@
 import os
 from decimal import Decimal
 from typing import List, Optional, Tuple
-from datetime import datetime  
+from datetime import datetime, date
 
 from colorama import Fore
 
@@ -93,7 +93,7 @@ class PriceData:
     def save_failed_requests(self):
         with open(CACHE_FILE_PATH, "w") as f:
             json.dump(
-                [list(item[:-1]) + [self.date_to_iso(item[-1])] if isinstance(item[-1], Date) else list(item) for item in self.failed_requests],
+                [list(item[:-1]) + [self.date_to_iso(item[-1])] if isinstance(item[-1], date) else list(item) for item in self.failed_requests],
                 f
             )
 
