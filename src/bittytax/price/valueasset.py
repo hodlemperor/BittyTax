@@ -178,28 +178,25 @@ class ValueAsset:
                 price_btc=price_btc,
             )
 
-    # Funzione per gestire la richiesta con retry, verifica delle chiavi e fallback
-    def get_data_with_retry(self, asset, quote, timestamp, attempts=1, delay=1, no_cache=False):
-        for attempt in range(attempts):
-            try:
-                # Effettua la richiesta per ottenere i dati
-                json_resp = self.price_data.get_historical(asset, quote, timestamp, no_cache)
+    def get_data_with_retry(self, asset, quote, timestamp, no_cache=False):
+        try:
+            # Effettua la richiesta per ottenere i dati
+            json_resp = self.price_data.get_historical(asset, quote, timestamp, no_cache)
 
-                # Verifica che le chiavi "Response" e "Type" siano presenti
-                if "Response" in json_resp and json_resp["Response"] == "Success" and json_resp.get("Type") == 2:
-                    # Se la risposta è valida, restituisci i dati richiesti
-                    return json_resp["Data"], json_resp.get("Name"), json_resp.get("Url")
-                else:
-                    # Se la risposta non è valida, stampa un messaggio di errore
-                    print(f"Formato di risposta inatteso: {json_resp}")
-                    raise KeyError("Risposta non valida")
-        
-            except KeyError as e:
-                # Log dell'errore e tentativo di retry
-                print(f"Errore durante il tentativo {attempt + 1}: {e}. Ritento tra {delay} secondi...")
-                time.sleep(delay)
+            # Verifica che le chiavi "Response" e "Type" siano presenti
+            if "Response" in json_resp and json_resp["Response"] == "Success" and json_resp.get("Type") == 2:
+                # Se la risposta è valida, restituisci i dati richiesti
+                return json_resp["Data"], json_resp.get("Name"), json_resp.get("Url")
+            else:
+                # Se la risposta non è valida, stampa un messaggio di errore
+                print(f"Formato di risposta inatteso: {json_resp}")
+                raise KeyError("Risposta non valida")
     
-        # Se tutti i tentativi falliscono, utilizza una logica di fallback
+        except KeyError as e:
+            # Log dell'errore senza retry
+            print(f"Errore durante la richiesta: {e}. Non verrà ritentato.")
+    
+        # Se la richiesta fallisce, utilizza una logica di fallback
         print(f"Impossibile ottenere dati per {asset} in {quote} alla data {timestamp}. Utilizzo dei valori di fallback.")
         return None, None, None
 
