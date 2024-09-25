@@ -47,7 +47,7 @@
     </div>
     <p>Consecutive working days above threshold: {{ threshold_report.consecutive_working_days }}</p>
     <p>Days above threshold: Started day: {{ threshold_report.days_above_threshold[0][0] | format_date("%d-%m-%Y") }} with value: {{ threshold_report.days_above_threshold[0][1]|valuefilter }}</p>
-    </p>
+    <p></p>
 
 <!-- Case where the threshold has not been exceeded -->
 {% elif tax_year <= 2022 and threshold_report is not none and not threshold_report.exceeded_threshold and threshold_report.missing_prices == False %}

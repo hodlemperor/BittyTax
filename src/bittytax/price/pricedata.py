@@ -22,6 +22,9 @@ from ..constants import CACHE_DIR
 from .datasource import DataSourceBase
 from .exceptions import UnexpectedDataSourceError
 
+import json
+
+CACHE_FILE_PATH = os.path.join(CACHE_DIR, "failed_requests.json")  # Usa CACHE_DIR per la cache
 
 class PriceData:
     def __init__(
@@ -29,7 +32,7 @@ class PriceData:
     ) -> None:
         self.price_tool = price_tool
         self.data_sources = {}
-        self.failed_requests = set()
+        self.failed_requests = self.load_failed_requests()
 
         if not os.path.exists(CACHE_DIR):
             os.mkdir(CACHE_DIR)
@@ -58,6 +61,18 @@ class PriceData:
 
             return None, AssetName("")
         raise UnexpectedDataSourceError(data_source, DataSourceBase.datasources_str())
+
+    # Funzione per caricare le richieste fallite
+    def load_failed_requests(self):
+        if os.path.exists(CACHE_FILE_PATH):
+            with open(CACHE_FILE_PATH, "r") as f:
+                return set(tuple(x) for x in json.load(f))  # Converti le tuple dalla lista JSON
+        return set()
+
+    # Funzione per salvare le richieste fallite
+    def save_failed_requests(self):
+        with open(CACHE_FILE_PATH, "w") as f:
+            json.dump(list(self.failed_requests), f)  # Converti il set in una lista prima di salvarlo
 
     def get_historical_ds(
         self,
@@ -100,13 +115,13 @@ class PriceData:
                         self.data_sources[data_source.upper()].assets[asset]["name"],
                         self.data_sources[data_source.upper()].prices[pair][date]["url"],
                     )
-                
+
                 # Se il prezzo non è disponibile, memorizza la richiesta fallita
                 print(f"Failed to retrieve price for {asset} on {date}. Marking request as failed.")
                 self.failed_requests.add((data_source, asset, quote, date))
+                self.save_failed_requests()  # Salva la richiesta fallita nel file
                 return None, self.data_sources[data_source.upper()].assets[asset]["name"], SourceUrl("")
 
-        # Se la fonte dati non è valida, solleva un errore
         raise UnexpectedDataSourceError(data_source, DataSourceBase.datasources_str())
 
     def get_latest(
