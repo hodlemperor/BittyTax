@@ -958,6 +958,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             daily_btc_total = Decimal(0)
 
             for asset_symbol, holdings in self.holdings.items():
+                btc_value = Decimal(0)
                 # Ottieni il saldo di quell'asset in quel giorno
                 quantity = holdings.get_balance_at_date(current_date)
         
@@ -1021,8 +1022,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         }
 
         return self.daily_holdings_report[tax_year]['average']
-
-
 
 class CalculateCapitalGains:
     # Rate changes start from 6th April in previous year, i.e. 2022 is for tax year 2021/22
