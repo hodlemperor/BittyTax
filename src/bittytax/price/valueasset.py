@@ -23,7 +23,7 @@ from ..bt_types import (
 from ..config import config
 from ..constants import WARNING
 from .pricedata import PriceData
-import time
+
 
 class VaPriceReport(TypedDict):  # pylint: disable=too-few-public-methods
     name: AssetName
@@ -177,56 +177,3 @@ class ValueAsset:
                 price_ccy=price_ccy,
                 price_btc=price_btc,
             )
-
-    def get_data_with_retry(self, asset, quote, timestamp, no_cache=False):
-        try:
-            # Effettua la richiesta per ottenere i dati
-            json_resp = self.price_data.get_historical(asset, quote, timestamp, no_cache)
-
-            # Verifica se la risposta è una tupla (come nel caso descritto)
-            if isinstance(json_resp, tuple) and len(json_resp) == 4:
-                # Restituisce direttamente i valori se il formato è corretto
-                return json_resp[0], json_resp[1], json_resp[3]
-            else:
-                # Se la risposta non è nel formato atteso, stampa un messaggio di errore
-                print(f"Formato di risposta inatteso: {json_resp}")
-                raise KeyError("Risposta non valida")
-    
-        except KeyError as e:
-            # Log dell'errore senza retry
-            print(f"Errore durante la richiesta: {e}. Non verrà ritentato.")
-    
-        # Se la richiesta fallisce, utilizza una logica di fallback
-        print(f"Impossibile ottenere dati per {asset} in {quote} alla data {timestamp}. Utilizzo dei valori di fallback.")
-        return None, None, None
-
-    def get_historical_price_with_conversion(
-        self, asset: AssetSymbol, timestamp: Timestamp, target_ccy: AssetSymbol, no_cache: bool = False
-    ) -> Tuple[Optional[Decimal], AssetName, DataSourceName]:
-        """
-        Ottiene il prezzo storico di un asset rispetto a una valuta target (come EUR).
-    
-        :param asset: Simbolo dell'asset (ad esempio BTC).
-        :param timestamp: Il timestamp per ottenere il prezzo storico.
-        :param target_ccy: Valuta di riferimento (ad esempio EUR).
-        :param no_cache: Booleano per disabilitare la cache.
-        :return: Il prezzo storico nella valuta richiesta, il nome dell'asset e la fonte dei dati.
-        """
-        # Prova a ottenere il prezzo storico dell'asset rispetto a BTC o alla valuta configurata
-        asset_price_btc_or_ccy, name, url = self.get_data_with_retry(asset, QuoteSymbol("BTC") if asset != "BTC" else target_ccy, timestamp, no_cache=no_cache)
-
-        # Se il prezzo è disponibile direttamente in target_ccy (esempio BTC/EUR)
-        if asset == "BTC" or asset in config.fiat_list:
-            return asset_price_btc_or_ccy, name, url
-
-        # Se è necessaria la conversione da BTC alla valuta target
-        if asset_price_btc_or_ccy is not None:
-            # Ottieni il prezzo di BTC nella valuta target (ad esempio BTC/EUR)
-            btc_to_target_price, name2, url2 = self.get_data_with_retry(AssetSymbol("BTC"), target_ccy, timestamp, no_cache=no_cache)
-            if btc_to_target_price is not None:
-                # Converti il prezzo dell'asset nella valuta target
-                asset_price_in_target_ccy = asset_price_btc_or_ccy * btc_to_target_price
-                return asset_price_in_target_ccy, name2, url2
-
-        # Se non è possibile ottenere il prezzo, utilizza valori di fallback
-        return None, name, url
