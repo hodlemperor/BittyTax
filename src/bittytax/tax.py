@@ -80,6 +80,10 @@ class YearlyReportRecord(TypedDict):
     assets: Dict[AssetSymbol, YearlyReportAsset]
     totals: YearlyReportTotal
 
+class DaylyReportRecord(TypedDict):
+    btc_balance: Decimal
+    eur_value: Decimal
+
 class CapitalGainsIndividual(TypedDict):  # pylint: disable=too-few-public-methods
     allowance: Decimal
     basic_rate: Decimal
@@ -188,6 +192,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         self.tax_report: Dict[Year, TaxReportRecord] = {}
         self.holdings_report: Optional[HoldingsReportRecord] = None
         self.yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]] = None
+        self.daily_holdings_report: Optional[Dict[Year, Dict[date, DaylyReportRecord]]] = {}
 
     def order_transactions(self) -> None:
         if config.debug:
@@ -911,6 +916,102 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         self.yearly_holdings_report[tax_year]['threshold_report'] = threshold_report
 
         print(f"Threshold report saved for the year {tax_year}.")
+
+    def get_daily_holdings_in_btc_and_eur(self, value_asset: ValueAsset, start_date: date, end_date: date) -> Dict[date, Dict[str, Decimal]]:
+        """
+        Calcola il saldo giornaliero di tutte le criptovalute in BTC e EUR.
+        
+        :param value_asset: Il servizio per ottenere i prezzi storici.
+        :param start_date: Data di inizio per il calcolo.
+        :param end_date: Data di fine per il calcolo.
+        :return: Un dizionario con la data come chiave e un altro dizionario contenente il saldo in BTC e il valore in EUR.
+        """
+        current_date = start_date
+        daily_holdings = {}
+
+        while current_date <= end_date:
+            btc_total = Decimal(0)
+            eur_total = Decimal(0)
+
+            for asset_symbol, holdings in self.holdings.items():
+                if holdings.is_crypto():
+                    # Ottieni il saldo di quell'asset in quel giorno
+                    quantity = holdings.get_balance_at_date(current_date)
+                    
+                    # Converti la quantità in BTC e EUR
+                    if asset_symbol == 'BTC':
+                        btc_value = quantity
+                    else:
+                        btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_date, 'BTC')
+                        btc_value = quantity * btc_price
+
+                    eur_price, _, _ = value_asset.get_historical_price(asset_symbol, current_date, 'EUR')
+                    eur_value = quantity * eur_price
+
+                    btc_total += btc_value
+                    eur_total += eur_value
+
+            daily_holdings[current_date] = {
+                'btc_balance': btc_total,
+                'eur_value': eur_total
+            }
+            
+            current_date += timedelta(days=1)
+        
+        # Salva la giacenza media nel report
+        self.daily_holdings_report = daily_holdings
+    
+    def get_average_balance_in_btc_and_eur(self, value_asset: ValueAsset, start_date: date, end_date: date) -> Dict[str, Decimal]:
+        """
+        Calcola la giacenza media in BTC e EUR per un periodo specifico.
+        
+        :param value_asset: Il servizio per ottenere i prezzi storici.
+        :param start_date: Data di inizio per il calcolo.
+        :param end_date: Data di fine per il calcolo.
+        :return: Un dizionario con la giacenza media in BTC e EUR.
+        """
+        total_btc = Decimal(0)
+        total_eur = Decimal(0)
+        days_count = (end_date - start_date).days + 1
+
+        current_date = start_date
+        while current_date <= end_date:
+            daily_btc_total = Decimal(0)
+            daily_eur_total = Decimal(0)
+
+            for asset_symbol, holdings in self.holdings.items():
+                if holdings.is_crypto():
+                    # Ottieni il saldo di quell'asset in quel giorno
+                    quantity = holdings.get_balance_at_date(current_date)
+                    
+                    # Converti la quantità in BTC e EUR
+                    if asset_symbol == 'BTC':
+                        btc_value = quantity
+                    else:
+                        btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_date, 'BTC')
+                        btc_value = quantity * btc_price
+
+                    eur_price, _, _ = value_asset.get_historical_price(asset_symbol, current_date, 'EUR')
+                    eur_value = quantity * eur_price
+
+                    daily_btc_total += btc_value
+                    daily_eur_total += eur_value
+
+            total_btc += daily_btc_total
+            total_eur += daily_eur_total
+
+            current_date += timedelta(days=1)
+
+        # Calcola la giacenza media
+        average_btc = total_btc / days_count
+        average_eur = total_eur / days_count
+
+        # Salva la giacenza media nel report
+        self.daily_holdings_report['average'] = {
+            'average_btc_balance': average_btc,
+            'average_eur_value': average_eur
+        }
+
 
 class CalculateCapitalGains:
     # Rate changes start from 6th April in previous year, i.e. 2022 is for tax year 2021/22
