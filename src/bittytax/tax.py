@@ -955,18 +955,17 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             saldo_modificato = False
 
             for asset_symbol, holdings in self.holdings.items():
-                if holdings.is_crypto():
-                    # Ottieni il saldo di quell'asset in quel giorno
-                    quantity = holdings.get_balance_at_date(current_date)
+                # Ottieni il saldo di quell'asset in quel giorno
+                quantity = holdings.get_balance_at_date(current_date)
                     
-                    # Converti la quantità in BTC
-                    if asset_symbol == 'BTC':
-                        btc_value = quantity
-                    else:
-                        btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_date, 'BTC')
-                        btc_value = quantity * btc_price
+                # Converti la quantità in BTC
+                if asset_symbol == 'BTC':
+                    btc_value = quantity
+                else:
+                    btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_date, 'BTC')
+                    btc_value = quantity * btc_price
 
-                    daily_btc_total += btc_value
+                daily_btc_total += btc_value
 
             # Confronta il saldo del giorno corrente con quello del giorno precedente
             if previous_btc_total is not None and daily_btc_total == previous_btc_total:
