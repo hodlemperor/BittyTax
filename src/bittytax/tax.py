@@ -968,9 +968,19 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 if asset_symbol == 'BTC':
                     btc_value = quantity
                 else:
-                    # Passiamo il datetime per ottenere il prezzo storico corretto
+                    # Ottieni il prezzo storico di BTC
                     btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_datetime, 'BTC')
-                    btc_value = quantity * btc_price
+        
+                    # Controlla se btc_price è None e assegna un valore predefinito
+                    if btc_price is None:
+                        btc_price = Decimal(0)  # Valore predefinito quando il prezzo è mancante
+                        # Contrassegna il giorno nel report come "prezzo mancante"
+                        self.daily_holdings_report[tax_year][current_date] = {
+                            'btc_balance': daily_btc_total,
+                            'missing_price': True  # Flag per indicare il prezzo mancante
+                        }
+                    else:
+                        btc_value = quantity * btc_price
 
                 daily_btc_total += btc_value
 
