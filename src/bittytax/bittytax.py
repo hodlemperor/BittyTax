@@ -337,7 +337,6 @@ def _do_each_tax_year(
 
         if not summary_only:
             tax.calculate_yearly_holdings(value_asset, tax_year)
-            # Check if the threshold of €51,645.69 has been exceeded
             tax.check_holding_threshold(value_asset, tax_year)
 
     else:
@@ -363,7 +362,6 @@ def _do_each_tax_year(
             tax.calculate_yearly_holdings(value_asset)
             for year in sorted(tax.tax_events):
                 if year in CCG.CG_DATA_INDIVIDUAL:
-                    # Check the threshold for each year
                     tax.check_holding_threshold(value_asset, year)
 
 
