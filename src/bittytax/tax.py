@@ -740,6 +740,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         :param value_asset: The ValueAsset instance to get historical prices.
         :param tax_year: (optional) The tax year to generate the report for.
         """
+        if config.debug:
+            print(f"{Fore.CYAN}Calculating yearly holdings")
+
         current_year = datetime.now().year
         current_date = datetime.now().date()
 
@@ -864,6 +867,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         Check if the euro value of the cryptocurrencies held has exceeded the threshold of €51,645.69
         for at least seven consecutive working days, only for tax years up to 2022 (inclusive).
         """
+        if config.debug:
+            print(f"{Fore.CYAN}Checking holding threshold for the year {tax_year}")
+
         # Skip calculation if the year is greater than 2022
         if tax_year > 2022:
             return False  # Skip calculation for years after 2022
@@ -945,6 +951,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         :param tax_year: L'anno fiscale per il quale calcolare il saldo giornaliero e la giacenza media.
         :return: Un dizionario con la giacenza media in BTC e EUR.
         """
+        if config.debug:
+            print(f"{Fore.CYAN}Calcolo della giacenza media per l'anno fiscale {tax_year}")
+
         current_year = datetime.now().year
         current_date = datetime.now().date()
 
@@ -982,11 +991,17 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 btc_value = Decimal(0)
                 # Ottieni il saldo di quell'asset in quel giorno
                 quantity = holdings.get_balance_at_date(current_report_date)
+                if config.debug:
+                    print(f"Asset {asset_symbol}: Quantity at {current_report_date} = {quantity}")
                 if quantity > 0:
                     # Converti la quantità in BTC o nella valuta target
                     if asset_symbol == 'BTC':
+                        if config.debug:
+                            print(f"Asset {asset_symbol}: Quantity is already in BTC")
                         btc_value = quantity
                     elif asset_symbol == 'EUR':
+                        if config.debug:
+                            print(f"Asset {asset_symbol}: Quantity is in EUR")
                         # Ottieni il tasso di cambio storico di BTC in EUR
                         btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime)
                         if btc_to_eur_price is None:
@@ -996,9 +1011,13 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                                 'missing_price': True  # Flag per indicare il prezzo mancante
                             }
                         else:
+                            if config.debug:
+                                print(f"BTC to EUR price at {current_datetime} = {btc_to_eur_price}")
                             # Converti EUR in BTC usando il prezzo di BTC in EUR
                             btc_value = quantity / btc_to_eur_price
                     else:
+                        if config.debug:
+                            print(f"Asset {asset_symbol}: Quantity is in {asset_symbol}")
                         # Ottieni il prezzo storico dell'asset rispetto a BTC
                         asset_to_btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_datetime)
                         if asset_to_btc_price is None:
