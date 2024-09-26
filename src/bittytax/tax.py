@@ -1034,12 +1034,16 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                                 print(f"Converted {quantity} {asset_symbol} to {btc_value} BTC")
 
                     daily_btc_total += btc_value
+                    if config.debug:
+                        print(f"daily_btc_total BTC value = {daily_btc_total}")
 
             # Calcola il valore totale in EUR utilizzando il prezzo storico di BTC in EUR
             btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime)
             if btc_to_eur_price is None:
                 btc_to_eur_price = Decimal(0)  # Gestione del prezzo mancante
             daily_eur_total = daily_btc_total * btc_to_eur_price
+            if config.debug:
+                print(f"daily_eur_total EUR value = {daily_eur_total}")
 
             # Salva il saldo giornaliero in BTC e il valore in EUR nel report
             self.daily_holdings_report[tax_year][current_report_date] = DailyReportRecord(
