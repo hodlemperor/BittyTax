@@ -126,15 +126,31 @@ class PriceData:
         self, asset: AssetSymbol, quote: QuoteSymbol, timestamp: Timestamp, no_cache: bool = False
     ) -> Tuple[Optional[Decimal], AssetName, DataSourceName, SourceUrl]:
         name = AssetName("")
+
+        # Debug: Inizio funzione
+        if config.debug:
+            print(f"DEBUG: Inizio get_historical per asset: {asset}, quote: {quote}, timestamp: {timestamp}, no_cache: {no_cache}")
+
+        # Ciclo attraverso le fonti dati in ordine di priorità
         for data_source in self.data_source_priority(asset):
-            price, name, url = self.get_historical_ds(
-                data_source, asset, quote, timestamp, no_cache
-            )
+            if config.debug:
+                print(f"DEBUG: Prova a ottenere dati storici da {data_source} per {asset} contro {quote}")
+
+            # Richiesta del prezzo storico per il data_source corrente
+            price, name, url = self.get_historical_ds(data_source, asset, quote, timestamp, no_cache)
+
+            # Debug: Controllo se il prezzo è stato trovato
+            if config.debug:
+                if price is not None:
+                    print(f"DEBUG: Prezzo trovato: {asset}={price.normalize():0,f} {quote} da {data_source}")
+                else:
+                    print(f"DEBUG: Nessun prezzo trovato per {asset} contro {quote} da {data_source} a {timestamp}")
+
+            # Se il prezzo è stato trovato, restituiscilo immediatamente
             if price is not None:
                 if config.debug:
                     print(
-                        f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 "
-                        f"{asset}={price.normalize():0,f} {quote} via "
+                        f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 {asset}={price.normalize():0,f} {quote} via "
                         f"{self.data_sources[data_source.upper()].name()} ({name})"
                     )
                 if self.price_tool:
@@ -143,4 +159,9 @@ class PriceData:
                         f"{Fore.CYAN}via {self.data_sources[data_source.upper()].name()} ({name})"
                     )
                 return price, name, self.data_sources[data_source.upper()].name(), url
+
+        # Debug: Nessun prezzo trovato dopo aver controllato tutte le fonti dati
+        if config.debug:
+            print(f"DEBUG: Nessun prezzo trovato per {asset} contro {quote} a {timestamp} da nessuna fonte dati.")
+
         return None, name, DataSourceName(""), SourceUrl("")
