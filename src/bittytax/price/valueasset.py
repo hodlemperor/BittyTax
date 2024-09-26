@@ -83,6 +83,11 @@ class ValueAsset:
     ) -> Tuple[Optional[Decimal], AssetName, DataSourceName]:
         asset_price_ccy = None
 
+        # Debug: inizio funzione
+        if config.debug:
+            print(f"DEBUG: Inizio get_historical_price per asset: {asset}, timestamp: {timestamp}")
+
+        # Controllo se l'asset tool è disponibile e se la data è futura
         if not self.price_tool and timestamp.date() >= datetime.now().date():
             tqdm.write(
                 f"{WARNING} Price for {asset} on {timestamp:%Y-%m-%d}, "
@@ -90,24 +95,55 @@ class ValueAsset:
             )
             return self.get_latest_price(asset)
 
+        # Verifica se l'asset è BTC o una valuta fiat
         if asset == "BTC" or asset in config.fiat_list:
+            if config.debug:
+                print(f"DEBUG: Ricerca prezzo storico per {asset} contro {config.ccy}")
+
             asset_price_ccy, name, data_source, url = self.price_data.get_historical(
                 asset, config.ccy, timestamp, no_cache
             )
+
+            # Debug: controllo se il prezzo è stato trovato
+            if config.debug:
+                if asset_price_ccy is not None:
+                    print(f"DEBUG: Prezzo trovato per {asset} contro {config.ccy}: {asset_price_ccy}")
+                else:
+                    print(f"DEBUG: Nessun prezzo trovato per {asset} contro {config.ccy} a {timestamp}")
+
             self.price_report_cache(asset, timestamp, name, data_source, url, asset_price_ccy)
         else:
+            # Debug: asset non è BTC né valuta fiat, ricerca contro BTC
+            if config.debug:
+                print(f"DEBUG: Ricerca prezzo storico per {asset} contro BTC")
+
             asset_price_btc, name, data_source, url = self.price_data.get_historical(
                 asset, QuoteSymbol("BTC"), timestamp, no_cache
             )
+
+            # Debug: controllo se il prezzo BTC è stato trovato
+            if config.debug:
+                if asset_price_btc is not None:
+                    print(f"DEBUG: Prezzo {asset} contro BTC: {asset_price_btc}")
+                else:
+                    print(f"DEBUG: Nessun prezzo trovato per {asset} contro BTC a {timestamp}")
+
             if asset_price_btc is not None:
-                (
-                    btc_price_ccy,
-                    name2,
-                    data_source2,
-                    url2,
-                ) = self.price_data.get_historical(
+                # Debug: recupero prezzo BTC in valuta fiat
+                if config.debug:
+                    print(f"DEBUG: Ricerca prezzo BTC contro {config.ccy}")
+
+                btc_price_ccy, name2, data_source2, url2 = self.price_data.get_historical(
                     AssetSymbol("BTC"), config.ccy, timestamp, no_cache
                 )
+
+                # Debug: controllo se il prezzo BTC in valuta fiat è stato trovato
+                if config.debug:
+                    if btc_price_ccy is not None:
+                        print(f"DEBUG: Prezzo BTC contro {config.ccy}: {btc_price_ccy}")
+                    else:
+                        print(f"DEBUG: Nessun prezzo trovato per BTC contro {config.ccy} a {timestamp}")
+
                 if btc_price_ccy is not None:
                     asset_price_ccy = btc_price_ccy * asset_price_btc
 
@@ -125,7 +161,15 @@ class ValueAsset:
                 asset_price_btc,
             )
 
+        # Debug: ritorno del risultato finale
+        if config.debug:
+            if asset_price_ccy is not None:
+                print(f"DEBUG: Prezzo finale per {asset} a {timestamp}: {asset_price_ccy}")
+            else:
+                print(f"DEBUG: Nessun prezzo finale trovato per {asset} a {timestamp}")
+
         return asset_price_ccy, name, data_source
+
 
     def get_latest_price(
         self, asset: AssetSymbol
