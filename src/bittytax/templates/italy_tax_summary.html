@@ -68,10 +68,22 @@
     <thead>
         <tr>
             <th align="left">Asset</th>
-            <th align="right">Quantity at {{ config.get_tax_year_end(tax_year) | format_date("%d/%m") }}</th>
+            <th align="right">
+                {% if tax_year == current_year %}
+                    Quantity at {{ "today" | format_date("%d/%m") }}
+                {% else %}
+                    Quantity at {{ config.get_tax_year_end(tax_year) | format_date("%d/%m") }}
+                {% endif %}
+            </th>
             <th align="right">Average Balance</th>
             <th align="right">Days Held</th>
-            <th align="right">Value (Fiat) at {{ config.get_tax_year_end(tax_year) | format_date("%d/%m") }}</th>
+            <th align="right">
+                {% if tax_year == current_year %}
+                    Value (Fiat) at {{ "today" | format_date("%d/%m") }}
+                {% else %}
+                    Value (Fiat) at {{ config.get_tax_year_end(tax_year) | format_date("%d/%m") }}
+                {% endif %}
+            </th>
             {% if tax_year >= 2023 %}
             <th align="right">IVAFE (0.2%)</th>
             {% endif %}

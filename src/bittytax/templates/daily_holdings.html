@@ -3,8 +3,7 @@
 <h2 style="text-align: center;">{{ config.format_tax_year(tax_year) }}</h2>
 
 <!-- report giornaliero -->
-
-        {% if tax_year in daily_holdings_report %}
+{% if tax_year in daily_holdings_report %}
 <table repeat="1" width="100%" class="asset-table">
     <thead>
         <tr>
@@ -17,7 +16,7 @@
     <tbody>
         {% for report_date, daily_data in daily_holdings_report[tax_year].items() if report_date != 'average' %}
         <tr {% if daily_data.missing_price %} class="warning" {% endif %}>
-            <!-- Aggiungi classe se il prezzo è mancante -->
+            <!-- Aggiungi classe se il prezzo e' mancante -->
             <td align="left">{{ report_date | format_date("%d-%m-%Y") }}</td>
             <td align="right">{{ daily_data.btc_balance | format_decimal }}</td>
             <td align="right">{{ daily_data.eur_value | valuefilter }}</td>
@@ -38,9 +37,6 @@
 <p>Average BTC Balance: {{ daily_holdings_report[tax_year]['average']['average_btc_balance'] | format_decimal }}</p>
 <p>Average EUR Value: {{ daily_holdings_report[tax_year]['average']['average_eur_value'] | valuefilter }}</p>
 
-        {% else %}
+{% else %}
 <p>No daily holdings report available for the year {{ tax_year }}.</p>
-        {% endif %}
-
-    {% endif %}
-{% endfor %}
+{% endif %}

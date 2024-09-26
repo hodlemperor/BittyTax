@@ -734,15 +734,16 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
     def calculate_yearly_holdings(self, value_asset: ValueAsset, tax_year: Optional[int] = None) -> None:
         """
         Calculate the annual holdings for each asset held with a fiat value and quantity.
-        If a tax_year is given, generate the report for that year only (excluding the current year).
+        If a tax_year is given, generate the report for that year only.
         Save the report in self.yearly_holdings_report.
 
         :param value_asset: The ValueAsset instance to get historical prices.
-        :param tax_year: (optional) The tax year to generate the report for (excluding the current year).
+        :param tax_year: (optional) The tax year to generate the report for.
         """
         current_year = datetime.now().year
+        current_date = datetime.now().date()
 
-        # If a tax_year is not provided, generate the report for all years include the current year.
+        # If a tax_year is not provided, generate the report for all years excluding the current year.
         if tax_year is None:
             first_year = self._get_first_tax_year()
             years = range(first_year, current_year)
@@ -750,7 +751,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 print(f"Generating report for all years from {first_year} to {current_year}")
         else:
             # If tax_year is in the future, raise an exception
-            if tax_year >= current_year:
+            if tax_year > current_year:
                 raise ValueError("Future years cannot be selected.")
             years = [tax_year]  # Only the specified fiscal year
             if config.debug:
@@ -763,15 +764,19 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         # Cycle through each fiscal year with progress bar
         for year in tqdm(years, desc=f"{Fore.CYAN}Generating yearly report{Fore.GREEN}"):
-            # Get end-of-year date (just the date part)
-            end_of_year_date = self._end_of_year(year)  # This is a date (without time)
-        
+            if year == current_year:
+                # If it's the current year, we use the current date instead of the end of the year
+                end_of_year_date = current_date
+            else:
+                # Get end-of-year date (just the date part)
+                end_of_year_date = self._end_of_year(year)
+
             # Get end-of-year datetime (date + time)
             end_of_year_datetime = datetime.combine(end_of_year_date, time.min)  # This is a datetime (with time)
 
             # Convert end_of_year_datetime in UTC
             end_of_year_datetime_utc = end_of_year_datetime.replace(tzinfo=timezone.utc)
-        
+
             # Get the start-of-year date
             start_of_year_date = self._start_of_year(year)
 
@@ -784,7 +789,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             # Cycle on each asset in holdings with progress bar
             for h in tqdm(self.holdings, unit="asset", desc=f"Processing year {year}", leave=False):
                 holdings = self.holdings[h]
-                # Get quantity at the end of the year (use end_of_year_date which is a date object)
+                # Get quantity at the end of the year (or current date if it's the current year)
                 quantity_end_of_year = holdings.get_balance_at_date(end_of_year_date)
 
                 # Quantity check (exclude if zero, unless config.show_empty_wallets is enabled)
@@ -792,16 +797,23 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     if config.debug:
                         print(f"Processing asset {h} for year {year}")
 
-                    average_balance = holdings.calculate_average_balance(start_of_year_date, end_of_year_date)  # Calculate average balance for the year
-                    days_held = holdings.calculate_days_held(start_of_year_date, end_of_year_date)  # Calculate the days of detention
+                    # Calculate average balance and days held
+                    average_balance = holdings.calculate_average_balance(start_of_year_date, end_of_year_date)
+                    days_held = holdings.calculate_days_held(start_of_year_date, end_of_year_date)
 
                     if config.debug:
                         print(f"Asset {h}: Quantity at end of year = {quantity_end_of_year}, Average balance = {average_balance}")
-                    
+
                     if holdings.is_crypto():
-                        # Get the historical value in fiat at the end of the year (use end_of_year_datetime_utc)
+                        # If it's a crypto asset, get the historical price
                         try:
-                            price_at_end_of_year, _, _ = value_asset.get_historical_price(h, end_of_year_datetime_utc, no_cache=False)
+                            if year == current_year:
+                                # For the current year, use the current price
+                                price_at_end_of_year, _, _ = value_asset.get_current_price(h)
+                            else:
+                                # For previous years, get the historical price at the end of the year
+                                price_at_end_of_year, _, _ = value_asset.get_historical_price(h, end_of_year_datetime_utc, no_cache=False)
+
                             if price_at_end_of_year is not None:
                                 value_in_fiat = quantity_end_of_year * price_at_end_of_year
                                 if config.debug:
@@ -933,14 +945,23 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         :param tax_year: L'anno fiscale per il quale calcolare il saldo giornaliero e la giacenza media.
         :return: Un dizionario con la giacenza media in BTC e EUR.
         """
+        current_year = datetime.now().year
+        current_date = datetime.now().date()
+
         # Recupera le date di inizio e fine dell'anno fiscale
         start_date = self._start_of_year(tax_year)
-        end_date = self._end_of_year(tax_year)
+
+        if tax_year == current_year:
+            # Se l'anno è quello corrente, usiamo la data corrente come data finale
+            end_date = current_date
+        else:
+            # Altrimenti, usiamo la fine dell'anno fiscale
+            end_date = self._end_of_year(tax_year)
 
         # Convertiamo le date in datetime con UTC timezone
         current_datetime = datetime.combine(start_date, time.min)
         current_datetime = current_datetime.replace(tzinfo=timezone.utc)
-        current_date = current_datetime.date()
+        current_report_date = current_datetime.date()
 
         end_datetime = datetime.combine(end_date, time.min)
         end_datetime = end_datetime.replace(tzinfo=timezone.utc)
@@ -953,15 +974,15 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         if tax_year not in self.daily_holdings_report:
             self.daily_holdings_report[tax_year] = {}
 
-        # Cicla su tutti i giorni dell'anno fiscale
+        # Cicla su tutti i giorni dell'anno fiscale o fino ad oggi se è l'anno corrente
         while current_datetime <= end_datetime:
             daily_btc_total = Decimal(0)
 
             for asset_symbol, holdings in self.holdings.items():
                 btc_value = Decimal(0)
                 # Ottieni il saldo di quell'asset in quel giorno
-                quantity = holdings.get_balance_at_date(current_date)
-    
+                quantity = holdings.get_balance_at_date(current_report_date)
+
                 # Converti la quantità in BTC o nella valuta target
                 if asset_symbol == 'BTC':
                     btc_value = quantity
@@ -970,7 +991,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime)
                     if btc_to_eur_price is None:
                         btc_to_eur_price = Decimal(0)  # Gestione del prezzo mancante
-                        self.daily_holdings_report[tax_year][current_date] = {
+                        self.daily_holdings_report[tax_year][current_report_date] = {
                             'btc_balance': daily_btc_total,
                             'missing_price': True  # Flag per indicare il prezzo mancante
                         }
@@ -982,7 +1003,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     asset_to_btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_datetime)
                     if asset_to_btc_price is None:
                         asset_to_btc_price = Decimal(0)  # Valore predefinito in caso di prezzo mancante
-                        self.daily_holdings_report[tax_year][current_date] = {
+                        self.daily_holdings_report[tax_year][current_report_date] = {
                             'btc_balance': daily_btc_total,
                             'missing_price': True  # Flag per indicare il prezzo mancante
                         }
@@ -998,7 +1019,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             daily_eur_total = daily_btc_total * btc_to_eur_price
 
             # Salva il saldo giornaliero in BTC e il valore in EUR nel report
-            self.daily_holdings_report[tax_year][current_date] = DailyReportRecord(
+            self.daily_holdings_report[tax_year][current_report_date] = DailyReportRecord(
                 btc_balance=daily_btc_total,
                 eur_value=daily_eur_total
             )
@@ -1009,7 +1030,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
             # Incrementa la data di un giorno
             current_datetime += timedelta(days=1)
-            current_date = current_datetime.date()
+            current_report_date = current_datetime.date()
 
         # Calcola la giacenza media
         average_btc = total_btc / days_count
