@@ -982,35 +982,39 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 btc_value = Decimal(0)
                 # Ottieni il saldo di quell'asset in quel giorno
                 quantity = holdings.get_balance_at_date(current_report_date)
-
-                # Converti la quantità in BTC o nella valuta target
-                if asset_symbol == 'BTC':
-                    btc_value = quantity
-                elif asset_symbol == 'EUR':
-                    # Ottieni il tasso di cambio storico di BTC in EUR
-                    btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime)
-                    if btc_to_eur_price is None:
-                        btc_to_eur_price = Decimal(0)  # Gestione del prezzo mancante
-                        self.daily_holdings_report[tax_year][current_report_date] = {
-                            'btc_balance': daily_btc_total,
-                            'missing_price': True  # Flag per indicare il prezzo mancante
-                        }
+                if quantity > 0:
+                    # Converti la quantità in BTC o nella valuta target
+                    if asset_symbol == 'BTC':
+                        btc_value = quantity
+                    elif asset_symbol == 'EUR':
+                        # Ottieni il tasso di cambio storico di BTC in EUR
+                        btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime)
+                        if btc_to_eur_price is None:
+                            btc_to_eur_price = Decimal(0)  # Gestione del prezzo mancante
+                            self.daily_holdings_report[tax_year][current_report_date] = {
+                                'btc_balance': daily_btc_total,
+                                'missing_price': True  # Flag per indicare il prezzo mancante
+                            }
+                        else:
+                            # Converti EUR in BTC usando il prezzo di BTC in EUR
+                            btc_value = quantity / btc_to_eur_price
                     else:
-                        # Converti EUR in BTC usando il prezzo di BTC in EUR
-                        btc_value = quantity / btc_to_eur_price
-                else:
-                    # Ottieni il prezzo storico dell'asset rispetto a BTC
-                    asset_to_btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_datetime)
-                    if asset_to_btc_price is None:
-                        asset_to_btc_price = Decimal(0)  # Valore predefinito in caso di prezzo mancante
-                        self.daily_holdings_report[tax_year][current_report_date] = {
-                            'btc_balance': daily_btc_total,
-                            'missing_price': True  # Flag per indicare il prezzo mancante
-                        }
-                    else:
-                        btc_value = quantity * asset_to_btc_price
+                        # Ottieni il prezzo storico dell'asset rispetto a BTC
+                        asset_to_btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_datetime)
+                        if asset_to_btc_price is None:
+                            if config.debug:
+                                print(f"Price not found for {asset_symbol} on {current_datetime}")
+                                asset_to_btc_price = Decimal(0)  # Valore predefinito in caso di prezzo mancante
+                                self.daily_holdings_report[tax_year][current_report_date] = {
+                                    'btc_balance': daily_btc_total,
+                                    'missing_price': True  # Flag per indicare il prezzo mancante
+                                }
+                        else:
+                            btc_value = quantity * asset_to_btc_price
+                            if config.debug:
+                                print(f"Converted {quantity} {asset_symbol} to {btc_value} BTC")
 
-                daily_btc_total += btc_value
+                    daily_btc_total += btc_value
 
             # Calcola il valore totale in EUR utilizzando il prezzo storico di BTC in EUR
             btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime)
