@@ -87,7 +87,7 @@ class ValueAsset:
         if config.debug:
             print(f"DEBUG: Inizio get_historical_price per asset: {asset}, timestamp: {timestamp}")
 
-        # Controllo se l'asset tool è disponibile e se la data è futura
+        # Controllo se l'asset tool ? disponibile e se la data ? futura
         if not self.price_tool and timestamp.date() >= datetime.now().date():
             tqdm.write(
                 f"{WARNING} Price for {asset} on {timestamp:%Y-%m-%d}, "
@@ -95,7 +95,7 @@ class ValueAsset:
             )
             return self.get_latest_price(asset)
 
-        # Verifica se l'asset è BTC o una valuta fiat
+        # Verifica se l'asset ? BTC o una valuta fiat
         if asset == "BTC" or asset in config.fiat_list:
             if config.debug:
                 print(f"DEBUG: Ricerca prezzo storico per {asset} contro {config.ccy}")
@@ -104,7 +104,7 @@ class ValueAsset:
                 asset, config.ccy, timestamp, no_cache
             )
 
-            # Debug: controllo se il prezzo è stato trovato
+            # Debug: controllo se il prezzo ? stato trovato
             if config.debug:
                 if asset_price_ccy is not None:
                     print(f"DEBUG: Prezzo trovato per {asset} contro {config.ccy}: {asset_price_ccy}")
@@ -113,7 +113,7 @@ class ValueAsset:
 
             self.price_report_cache(asset, timestamp, name, data_source, url, asset_price_ccy)
         else:
-            # Debug: asset non è BTC né valuta fiat, ricerca contro BTC
+            # Debug: asset non ? BTC n? valuta fiat, ricerca contro BTC
             if config.debug:
                 print(f"DEBUG: Ricerca prezzo storico per {asset} contro BTC")
 
@@ -121,7 +121,7 @@ class ValueAsset:
                 asset, QuoteSymbol("BTC"), timestamp, no_cache
             )
 
-            # Debug: controllo se il prezzo BTC è stato trovato
+            # Debug: controllo se il prezzo BTC ? stato trovato
             if config.debug:
                 if asset_price_btc is not None:
                     print(f"DEBUG: Prezzo {asset} contro BTC: {asset_price_btc}")
@@ -137,7 +137,7 @@ class ValueAsset:
                     AssetSymbol("BTC"), config.ccy, timestamp, no_cache
                 )
 
-                # Debug: controllo se il prezzo BTC in valuta fiat è stato trovato
+                # Debug: controllo se il prezzo BTC in valuta fiat ? stato trovato
                 if config.debug:
                     if btc_price_ccy is not None:
                         print(f"DEBUG: Prezzo BTC contro {config.ccy}: {btc_price_ccy}")

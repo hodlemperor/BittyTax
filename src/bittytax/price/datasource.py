@@ -508,7 +508,7 @@ class CoinGecko(DataSourceBase):
         if config.debug:
             print(f"DEBUG: Asset list for CoinGecko: {self.assets}")
 
-            # Verifica se un asset specifico è presente, ad esempio UMA
+            # Verifica se un asset specifico ? presente, ad esempio UMA
             if "UMA" in self.assets:
                 print(f"DEBUG: Asset UMA trovato: {self.assets['UMA']}")
             else:
@@ -522,7 +522,7 @@ class CoinGecko(DataSourceBase):
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
 
-        # Aggiungi debug per la richiesta dei prezzi più recenti
+        # Aggiungi debug per la richiesta dei prezzi pi? recenti
         if config.debug:
             print(f"DEBUG: Richiesta get_latest per asset: {asset}, quote: {quote}, asset_id: {asset_id}")
 
