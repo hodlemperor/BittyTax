@@ -66,40 +66,84 @@ class PriceData:
         timestamp: Timestamp,
         no_cache: bool = False,
     ) -> Tuple[Optional[Decimal], AssetName, SourceUrl]:
+        # Debug: Inizio funzione
+        if config.debug:
+            print(f"DEBUG: Inizio get_historical_ds per asset: {asset}, quote: {quote}, timestamp: {timestamp}, no_cache: {no_cache}, data_source: {data_source}")
+
+        # Verifica se il data source è tra quelli disponibili
         if data_source.upper() in self.data_sources:
+            if config.debug:
+                print(f"DEBUG: Data source {data_source} trovato")
+
+            # Verifica se l'asset è supportato dal data source
             if asset in self.data_sources[data_source.upper()].assets:
+                if config.debug:
+                    print(f"DEBUG: Asset {asset} trovato nel data source {data_source}")
+
                 date = Date(timestamp.date())
                 pair = TradingPair(asset + "/" + quote)
 
+                # Controlla la cache se no_cache è False
                 if not no_cache:
-                    # Check cache first
+                    if config.debug:
+                        print(f"DEBUG: Controllo cache per la coppia {pair} e la data {date}")
+
+                    # Controllo se la cache ha il prezzo per la coppia e la data specificati
                     if (
                         pair in self.data_sources[data_source.upper()].prices
                         and date in self.data_sources[data_source.upper()].prices[pair]
                     ):
+                        if config.debug:
+                            print(f"DEBUG: Prezzo trovato in cache per {pair} a {date}")
+                    
                         return (
                             self.data_sources[data_source.upper()].prices[pair][date]["price"],
                             self.data_sources[data_source.upper()].assets[asset]["name"],
                             self.data_sources[data_source.upper()].prices[pair][date]["url"],
                         )
 
+                # Se non è in cache, richiede i dati storici
+                if config.debug:
+                    print(f"DEBUG: Chiamata per ottenere il prezzo storico da {data_source} per {asset} contro {quote} a {timestamp}")
+
                 self.data_sources[data_source.upper()].get_historical(asset, quote, timestamp)
+
+                # Dopo la richiesta, verifica nuovamente la presenza dei dati
                 if (
                     pair in self.data_sources[data_source.upper()].prices
                     and date in self.data_sources[data_source.upper()].prices[pair]
                 ):
+                    if config.debug:
+                        print(f"DEBUG: Prezzo ottenuto con successo da {data_source} per {pair} a {date}")
+
                     return (
                         self.data_sources[data_source.upper()].prices[pair][date]["price"],
                         self.data_sources[data_source.upper()].assets[asset]["name"],
                         self.data_sources[data_source.upper()].prices[pair][date]["url"],
                     )
+
+                # Se il prezzo non viene trovato, restituisce None
+                if config.debug:
+                    print(f"DEBUG: Nessun prezzo trovato per {pair} a {date} dopo la chiamata storica")
+
                 return (
                     None,
                     self.data_sources[data_source.upper()].assets[asset]["name"],
                     SourceUrl(""),
                 )
+
+            # Se l'asset non è supportato dal data source
+            if config.debug:
+                print(f"DEBUG: Asset {asset} non trovato nel data source {data_source}")
+
             return None, AssetName(""), SourceUrl("")
+    
+        # Data source non valido
+        if config.debug:
+            print(f"DEBUG: Data source {data_source} non trovato tra quelli disponibili")
+
         raise UnexpectedDataSourceError(data_source, DataSourceBase.datasources_str())
+
 
     def get_latest(
         self, asset: AssetSymbol, quote: QuoteSymbol
