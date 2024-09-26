@@ -75,8 +75,9 @@ class PriceData:
             if config.debug:
                 print(f"DEBUG: Data source {data_source} trovato")
 
+            asset_upper = asset.strip().upper()
             # Verifica se l'asset è supportato dal data source
-            if asset in self.data_sources[data_source.upper()].assets:
+            if asset_upper in self.data_sources[data_source.upper()].assets:
                 if config.debug:
                     print(f"DEBUG: Asset {asset} trovato nel data source {data_source}")
 
