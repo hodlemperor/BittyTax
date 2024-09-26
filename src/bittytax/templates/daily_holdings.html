@@ -1,10 +1,5 @@
 ﻿<h1>Daily Holdings Report</h1>
 
-{% for tax_year in tax_report|sort %}
-    {% if tax_year in yearly_holdings_report %}
-        {% set cgains = tax_report[tax_year]['CapitalGains'] %}
-        {% set margin = tax_report[tax_year]['MarginTrading'] %}
-
 <h2 style="text-align: center;">{{ config.format_tax_year(tax_year) }}</h2>
 
 <!-- report giornaliero -->
