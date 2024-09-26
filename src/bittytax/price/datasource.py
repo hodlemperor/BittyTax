@@ -503,6 +503,17 @@ class CoinGecko(DataSourceBase):
             c["symbol"].strip().upper(): {"asset_id": c["id"], "name": c["name"].strip()}
             for c in json_resp
         }
+
+        # Aggiungi debug per la lista degli asset caricati
+        if config.debug:
+            print(f"DEBUG: Asset list for CoinGecko: {self.assets}")
+
+            # Verifica se un asset specifico è presente, ad esempio UMA
+            if "UMA" in self.assets:
+                print(f"DEBUG: Asset UMA trovato: {self.assets['UMA']}")
+            else:
+                print(f"DEBUG: Asset UMA non trovato in CoinGecko")
+
         self.get_config_assets()
 
     def get_latest(
@@ -511,10 +522,19 @@ class CoinGecko(DataSourceBase):
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
 
+        # Aggiungi debug per la richiesta dei prezzi più recenti
+        if config.debug:
+            print(f"DEBUG: Richiesta get_latest per asset: {asset}, quote: {quote}, asset_id: {asset_id}")
+
         json_resp = self.get_json(
             f"{self.api_root}/coins/{asset_id}"
             f"?localization=false&community_data=false&developer_data=false"
         )
+
+        # Aggiungi debug per la risposta API ricevuta
+        if config.debug:
+            print(f"DEBUG: Risposta API get_latest per asset {asset} e quote {quote}: {json_resp}")
+
         return (
             Decimal(repr(json_resp["market_data"]["current_price"][quote.lower()]))
             if "market_data" in json_resp
@@ -533,8 +553,17 @@ class CoinGecko(DataSourceBase):
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
 
+        # Aggiungi debug per la richiesta dei dati storici
+        if config.debug:
+            print(f"DEBUG: Richiesta get_historical per asset: {asset}, quote: {quote}, timestamp: {timestamp}, asset_id: {asset_id}")
+
         url = f"{self.api_root}/coins/{asset_id}/market_chart?vs_currency={quote}&days=max"
         json_resp = self.get_json(url)
+
+        # Aggiungi debug per la risposta dell'API sui dati storici
+        if config.debug:
+            print(f"DEBUG: Risposta API get_historical per asset {asset} e quote {quote}: {json_resp}")
+
         pair = self.pair(asset, quote)
         if "prices" in json_resp:
             self.update_prices(
@@ -548,6 +577,11 @@ class CoinGecko(DataSourceBase):
                 },
                 timestamp,
             )
+        else:
+            # Aggiungi un debug se la risposta non contiene dati di prezzo
+            if config.debug:
+                print(f"DEBUG: Nessun dato di prezzo trovato nella risposta API per asset {asset}")
+
 
 
 class CoinPaprika(DataSourceBase):
