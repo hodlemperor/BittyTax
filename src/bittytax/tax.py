@@ -1021,6 +1021,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         else:
                             # Converti EUR in BTC usando il prezzo di BTC in EUR
                             btc_value = quantity / btc_to_eur_price
+                            btc_crypto_only_value = 0
                     else:
                         # Ottieni il prezzo storico dell'asset rispetto a BTC
                         asset_to_btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_datetime)
