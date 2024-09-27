@@ -1001,14 +1001,14 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
             for asset_symbol, holdings in self.holdings.items():
                 btc_value = Decimal(0)
-                btc_crypto_only = Decimal(0)
+                btc_crypto_only_value = Decimal(0)
                 # Ottieni il saldo di quell'asset in quel giorno
                 quantity = holdings.get_balance_at_date(current_report_date)
                 if quantity > 0:
                     # Converti la quantità in BTC o nella valuta target
                     if asset_symbol == 'BTC':
                         btc_value = quantity
-                        btc_crypto_only += btc_value
+                        btc_crypto_only_value = btc_value
                     elif asset_symbol == 'EUR':
                         # Ottieni il tasso di cambio storico di BTC in EUR
                         btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime)
@@ -1034,10 +1034,10 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                                 }
                         else:
                             btc_value = quantity * asset_to_btc_price
-                            btc_crypto_only += btc_value
+                            btc_crypto_only_value = btc_value
 
                     daily_btc_total += btc_value
-                    daily_btc_crypto_only += btc_crypto_only
+                    daily_btc_crypto_only += btc_crypto_only_value
 
             # Calcola il valore totale in EUR utilizzando il prezzo storico di BTC in EUR
             btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime)
