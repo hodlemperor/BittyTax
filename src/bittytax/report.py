@@ -114,6 +114,7 @@ class ReportPdf:
             html = template.render(
                 {
                     "date": datetime.now(),
+                    "current_year": datetime.now().year,
                     "author": f"{progname} v{__version__}",
                     "config": config,
                     "args": args,
