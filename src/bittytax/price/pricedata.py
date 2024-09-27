@@ -29,7 +29,6 @@ class PriceData:
     ) -> None:
         self.price_tool = price_tool
         self.data_sources = {}
-        self.failed_requests = set()
 
         if not os.path.exists(CACHE_DIR):
             os.mkdir(CACHE_DIR)
@@ -67,18 +66,13 @@ class PriceData:
         timestamp: Timestamp,
         no_cache: bool = False,
     ) -> Tuple[Optional[Decimal], AssetName, SourceUrl]:
-        date = Date(timestamp.date())
-        pair = TradingPair(asset + "/" + quote)
-
-        # Controlla se questa richiesta è già fallita
-        if (data_source, asset, quote, date) in self.failed_requests:
-            print(f"Skipping request for {asset} on {date} (previous failure).")
-            return None, AssetName(""), SourceUrl("")
-
         if data_source.upper() in self.data_sources:
             if asset in self.data_sources[data_source.upper()].assets:
+                date = Date(timestamp.date())
+                pair = TradingPair(asset + "/" + quote)
+
                 if not no_cache:
-                    # Controlla la cache
+                    # Check cache first
                     if (
                         pair in self.data_sources[data_source.upper()].prices
                         and date in self.data_sources[data_source.upper()].prices[pair]
@@ -89,7 +83,6 @@ class PriceData:
                             self.data_sources[data_source.upper()].prices[pair][date]["url"],
                         )
 
-                # Esegue la richiesta per il prezzo storico
                 self.data_sources[data_source.upper()].get_historical(asset, quote, timestamp)
                 if (
                     pair in self.data_sources[data_source.upper()].prices
@@ -100,13 +93,12 @@ class PriceData:
                         self.data_sources[data_source.upper()].assets[asset]["name"],
                         self.data_sources[data_source.upper()].prices[pair][date]["url"],
                     )
-                
-                # Se il prezzo non è disponibile, memorizza la richiesta fallita
-                print(f"Failed to retrieve price for {asset} on {date}. Marking request as failed.")
-                self.failed_requests.add((data_source, asset, quote, date))
-                return None, self.data_sources[data_source.upper()].assets[asset]["name"], SourceUrl("")
-
-        # Se la fonte dati non è valida, solleva un errore
+                return (
+                    None,
+                    self.data_sources[data_source.upper()].assets[asset]["name"],
+                    SourceUrl(""),
+                )
+            return None, AssetName(""), SourceUrl("")
         raise UnexpectedDataSourceError(data_source, DataSourceBase.datasources_str())
 
     def get_latest(
