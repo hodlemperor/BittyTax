@@ -12,16 +12,23 @@
                     <th align="left">Date</th>
                     <th align="right">BTC Balance (Crypto+Fiat)</th>
                     <th align="right">EUR Value (Crypto+Fiat)</th>
-                    <th align="right">Missing Price</th> <!-- Nuova colonna per il prezzo mancante -->
+                    <th align="right">BTC Balance (Only Crypto)</th> <!-- Nuova colonna per solo criptovalute -->
+                    <th align="right">EUR Value (Only Crypto)</th> <!-- Nuova colonna per solo criptovalute -->
+                    <th align="right">Missing Price</th> <!-- Colonna per il prezzo mancante -->
                 </tr>
             </thead>
             <tbody>
                 {% for report_date, daily_data in daily_holdings_report[tax_year].items() if report_date != 'average' %}
-                <tr {% if daily_data.missing_price %} class="warning" {% endif %}>
-                    <!-- Aggiungi classe se il prezzo e' mancante -->
+                <tr 
+                    {% if daily_data.missing_price %} class="warning" 
+                    {% elseif tax_year <= 2022 and daily_data.eur_value_only_crypto > 51645.69 %} class="highlight" 
+                    {% endif %}>
+                    <!-- Evidenzia se il valore EUR solo crypto è maggiore di 51.645,69 per anni fino al 2022 -->
                     <td align="left">{{ report_date | format_date("%d-%m-%Y") }}</td>
                     <td align="right">{{ daily_data.btc_balance | format_decimal }}</td>
                     <td align="right">{{ daily_data.eur_value | valuefilter }}</td>
+                    <td align="right">{{ daily_data.btc_balance_only_crypto | format_decimal }}</td> <!-- BTC solo criptovalute -->
+                    <td align="right">{{ daily_data.eur_value_only_crypto | valuefilter }}</td> <!-- EUR solo criptovalute -->
                     <td align="right">
                         {% if daily_data.missing_price %}
                         <span class="missing-price-icon">⚠️</span> <!-- Icona per prezzo mancante -->
@@ -38,6 +45,8 @@
         <h3>Average Balance</h3>
         <p>Average BTC Balance: {{ daily_holdings_report[tax_year]['average']['average_btc_balance'] | format_decimal }}</p>
         <p>Average EUR Value: {{ daily_holdings_report[tax_year]['average']['average_eur_value'] | valuefilter }}</p>
+        <p>Average BTC Balance (Only Crypto): {{ daily_holdings_report[tax_year]['average']['average_btc_balance_only_crypto'] | format_decimal }}</p>
+        <p>Average EUR Value (Only Crypto): {{ daily_holdings_report[tax_year]['average']['average_eur_value_only_crypto'] | valuefilter }}</p>
 
         {% else %}
         <p>No daily holdings report available for the year {{ tax_year }}.</p>
