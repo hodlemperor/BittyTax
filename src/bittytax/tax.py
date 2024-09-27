@@ -1001,6 +1001,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
             for asset_symbol, holdings in self.holdings.items():
                 btc_value = Decimal(0)
+                btc_crypto_only = Decimal(0)
                 # Ottieni il saldo di quell'asset in quel giorno
                 quantity = holdings.get_balance_at_date(current_report_date)
                 if config.debug:
@@ -1011,6 +1012,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         if config.debug:
                             print(f"Asset {asset_symbol}: Quantity is already in BTC")
                         btc_value = quantity
+                        btc_crypto_only += btc_value
                     elif asset_symbol == 'EUR':
                         if config.debug:
                             print(f"Asset {asset_symbol}: Quantity is in EUR")
@@ -1045,9 +1047,10 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                             if config.debug:
                                 print(f"Converted {quantity} {asset_symbol} to {btc_value} BTC")
 
-                        daily_btc_crypto_only += btc_value
+                            btc_crypto_only += btc_value
 
                     daily_btc_total += btc_value
+                    daily_btc_crypto_only += btc_crypto_only
                     if config.debug:
                         print(f"daily_btc_total BTC value = {daily_btc_total}")
 
