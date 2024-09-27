@@ -970,19 +970,13 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         start_date = self._start_of_year(tax_year)
 
         if tax_year == current_year:
-            # Se l'anno è quello corrente, usiamo la data corrente come data finale
-            end_date = current_date
+            end_date = current_date  # Se è l'anno corrente, usa la data corrente
         else:
-            # Altrimenti, usiamo la fine dell'anno fiscale
-            end_date = self._end_of_year(tax_year)
+            end_date = self._end_of_year(tax_year)  # Altrimenti, usa la fine dell'anno fiscale
 
-        # Convertiamo le date in datetime con UTC timezone
-        current_datetime = datetime.combine(start_date, time.min)
-        current_datetime = current_datetime.replace(tzinfo=timezone.utc)
+        current_datetime = datetime.combine(start_date, time.min).replace(tzinfo=timezone.utc)
         current_report_date = current_datetime.date()
-
-        end_datetime = datetime.combine(end_date, time.min)
-        end_datetime = end_datetime.replace(tzinfo=timezone.utc)
+        end_datetime = datetime.combine(end_date, time.min).replace(tzinfo=timezone.utc)
 
         total_btc = Decimal(0)
         total_eur = Decimal(0)
@@ -990,64 +984,74 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         total_eur_crypto_only = Decimal(0)
         days_count = (end_date - start_date).days + 1
 
-        # Inizializza il report giornaliero per l'anno fiscale specifico se non esiste già
+        if config.debug:
+            print(f"Start date: {start_date}, End date: {end_date}, Days count: {days_count}")
+
         if tax_year not in self.daily_holdings_report:
             self.daily_holdings_report[tax_year] = {}
 
-        # Cicla su tutti i giorni dell'anno fiscale o fino ad oggi se è l'anno corrente
         while current_datetime <= end_datetime:
             daily_btc_total = Decimal(0)
             daily_btc_crypto_only = Decimal(0)
 
+            if config.debug:
+                print(f"Processing date: {current_report_date}")
+
             for asset_symbol, holdings in self.holdings.items():
-                btc_value = Decimal(0)
-                btc_crypto_only_value = Decimal(0)
-                # Ottieni il saldo di quell'asset in quel giorno
                 quantity = holdings.get_balance_at_date(current_report_date)
                 if quantity > 0:
-                    # Converti la quantità in BTC o nella valuta target
+                    if config.debug:
+                        print(f"Asset: {asset_symbol}, Quantity: {quantity}")
+
                     if asset_symbol == 'BTC':
                         btc_value = quantity
                         btc_crypto_only_value = btc_value
                     elif asset_symbol == 'EUR':
-                        # Ottieni il tasso di cambio storico di BTC in EUR
                         btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime)
                         if btc_to_eur_price is None:
-                            btc_to_eur_price = Decimal(0)  # Gestione del prezzo mancante
+                            btc_to_eur_price = Decimal(0)
+                            if config.debug:
+                                print(f"Missing BTC to EUR price for date: {current_report_date}")
                             self.daily_holdings_report[tax_year][current_report_date] = {
                                 'btc_balance': daily_btc_total,
-                                'missing_price': True  # Flag per indicare il prezzo mancante
+                                'missing_price': True
                             }
                         else:
-                            # Converti EUR in BTC usando il prezzo di BTC in EUR
                             btc_value = quantity / btc_to_eur_price
                             btc_crypto_only_value = 0
+                            if config.debug:
+                                print(f"EUR converted to BTC: {btc_value} at price {btc_to_eur_price}")
                     else:
-                        # Ottieni il prezzo storico dell'asset rispetto a BTC
                         asset_to_btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_datetime)
                         if asset_to_btc_price is None:
+                            asset_to_btc_price = Decimal(0)
                             if config.debug:
-                                print(f"Price not found for {asset_symbol} on {current_datetime}")
-                                asset_to_btc_price = Decimal(0)  # Valore predefinito in caso di prezzo mancante
-                                self.daily_holdings_report[tax_year][current_report_date] = {
-                                    'btc_balance': daily_btc_total,
-                                    'missing_price': True  # Flag per indicare il prezzo mancante
-                                }
+                                print(f"Missing price for {asset_symbol} on {current_report_date}")
+                            self.daily_holdings_report[tax_year][current_report_date] = {
+                                'btc_balance': daily_btc_total,
+                                'missing_price': True
+                            }
                         else:
                             btc_value = quantity * asset_to_btc_price
                             btc_crypto_only_value = btc_value
+                            if config.debug:
+                                print(f"{asset_symbol} converted to BTC: {btc_value} at price {asset_to_btc_price}")
 
                     daily_btc_total += btc_value
                     daily_btc_crypto_only += btc_crypto_only_value
 
-            # Calcola il valore totale in EUR utilizzando il prezzo storico di BTC in EUR
             btc_to_eur_price, _, _ = value_asset.get_historical_price('BTC', current_datetime)
             if btc_to_eur_price is None:
-                btc_to_eur_price = Decimal(0)  # Gestione del prezzo mancante
+                btc_to_eur_price = Decimal(0)
+                if config.debug:
+                    print(f"Missing BTC to EUR price on {current_report_date}")
+
             daily_eur_total = daily_btc_total * btc_to_eur_price
             daily_eur_crypto_only = daily_btc_crypto_only * (btc_to_eur_price or Decimal(0))
 
-            # Salva il saldo giornaliero in BTC e il valore in EUR nel report
+            if config.debug:
+                print(f"Daily BTC total: {daily_btc_total}, Daily EUR total: {daily_eur_total}")
+
             self.daily_holdings_report[tax_year][current_report_date] = DailyReportRecord(
                 btc_balance=daily_btc_total,
                 eur_value=daily_eur_total,
@@ -1055,23 +1059,19 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 eur_value_only_crypto=daily_eur_crypto_only
             )
 
-            # Aggiungi i valori al totale per il calcolo della giacenza media
             total_btc += daily_btc_total
             total_eur += daily_eur_total
             total_btc_crypto_only += daily_btc_crypto_only
             total_eur_crypto_only += daily_eur_crypto_only
 
-            # Incrementa la data di un giorno
             current_datetime += timedelta(days=1)
             current_report_date = current_datetime.date()
 
-        # Calcola la giacenza media
         average_btc = total_btc / days_count
         average_eur = total_eur / days_count
         average_btc_crypto_only = total_btc_crypto_only / days_count
         average_eur_crypto_only = total_eur_crypto_only / days_count
 
-        # Salva la giacenza media nel report dell'anno fiscale
         self.daily_holdings_report[tax_year]['average'] = {
             'average_btc_balance': average_btc,
             'average_eur_value': average_eur,
@@ -1079,7 +1079,12 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             'average_eur_value_only_crypto': average_eur_crypto_only
         }
 
+        if config.debug:
+            print(f"Average BTC: {average_btc}, Average EUR: {average_eur}")
+            print(f"Average BTC (Crypto Only): {average_btc_crypto_only}, Average EUR (Crypto Only): {average_eur_crypto_only}")
+
         print(f"Giacenza media calcolata per l'anno fiscale {tax_year}: {average_btc} BTC, {average_eur} EUR")
+
 
 class CalculateCapitalGains:
     # Rate changes start from 6th April in previous year, i.e. 2022 is for tax year 2021/22
