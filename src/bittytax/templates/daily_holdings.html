@@ -42,11 +42,34 @@
         </table>
 
         <!-- Giacenza Media -->
-        <h3>Average Balance</h3>
-        <p>Average BTC Balance: {{ daily_holdings_report[tax_year]['average']['average_btc_balance'] | format_decimal }}</p>
-        <p>Average EUR Value: {{ daily_holdings_report[tax_year]['average']['average_eur_value'] | valuefilter }}</p>
-        <p>Average BTC Balance (Only Crypto): {{ daily_holdings_report[tax_year]['average']['average_btc_balance_only_crypto'] | format_decimal }}</p>
-        <p>Average EUR Value (Only Crypto): {{ daily_holdings_report[tax_year]['average']['average_eur_value_only_crypto'] | valuefilter }}</p>
+        <h3 style="font-size: 24px; text-align: center; margin-top: 30px; color: #2c3e50;">Average Balance</h3>
+
+        <table width="100%" style="border-collapse: collapse; margin-top: 20px;">
+            <thead>
+                <tr>
+                    <th align="left" style="padding: 10px; font-size: 18px; border-bottom: 2px solid #ddd;">Description</th>
+                    <th align="right" style="padding: 10px; font-size: 18px; border-bottom: 2px solid #ddd;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 10px; font-size: 16px; color: #34495e;">Average BTC Balance (Crypto+Fiat):</td>
+                    <td align="right" style="padding: 10px; font-size: 16px; font-weight: bold;">{{ daily_holdings_report[tax_year]['average']['average_btc_balance'] | format_decimal }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; font-size: 16px; color: #34495e;">Average EUR Value (Crypto+Fiat):</td>
+                    <td align="right" style="padding: 10px; font-size: 16px; font-weight: bold;">{{ daily_holdings_report[tax_year]['average']['average_eur_value'] | valuefilter }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; font-size: 16px; color: #34495e;">Average BTC Balance (Only Crypto):</td>
+                    <td align="right" style="padding: 10px; font-size: 16px; font-weight: bold;">{{ daily_holdings_report[tax_year]['average']['average_btc_balance_only_crypto'] | format_decimal }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; font-size: 16px; color: #34495e;">Average EUR Value (Only Crypto):</td>
+                    <td align="right" style="padding: 10px; font-size: 16px; font-weight: bold;">{{ daily_holdings_report[tax_year]['average']['average_eur_value_only_crypto'] | valuefilter }}</td>
+                </tr>
+            </tbody>
+        </table>
 
         {% else %}
         <p>No daily holdings report available for the year {{ tax_year }}.</p>
