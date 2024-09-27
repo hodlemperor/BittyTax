@@ -1022,7 +1022,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                             if config.debug:
                                 print(f"EUR converted to BTC: {btc_value} at price {btc_to_eur_price}")
                     else:
-                        asset_to_btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_datetime)
+                        asset_to_btc_price, _, _ = value_asset.get_historical_price(asset_symbol, current_datetime, return_in_btc=True)
+                        if config.debug:
+                            print(f"Price for {asset_symbol} on {current_report_date}: {asset_to_btc_price}")
                         if asset_to_btc_price is None:
                             asset_to_btc_price = Decimal(0)
                             if config.debug:
@@ -1035,6 +1037,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                             btc_value = quantity * asset_to_btc_price
                             btc_crypto_only_value = btc_value
                             if config.debug:
+                                print(f"{asset_symbol} quantity: {quantity}, price in BTC: {asset_to_btc_price}")
                                 print(f"{asset_symbol} converted to BTC: {btc_value} at price {asset_to_btc_price}")
 
                     daily_btc_total += btc_value

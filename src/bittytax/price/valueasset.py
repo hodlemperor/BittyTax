@@ -79,9 +79,10 @@ class ValueAsset:
         return None, AssetName(""), DataSourceName("")
 
     def get_historical_price(
-        self, asset: AssetSymbol, timestamp: Timestamp, no_cache: bool = False
+        self, asset: AssetSymbol, timestamp: Timestamp, no_cache: bool = False, return_in_btc: bool = False
     ) -> Tuple[Optional[Decimal], AssetName, DataSourceName]:
         asset_price_ccy = None
+        asset_price_btc = None
 
         if not self.price_tool and timestamp.date() >= datetime.now().date():
             tqdm.write(
@@ -91,30 +92,38 @@ class ValueAsset:
             return self.get_latest_price(asset)
 
         if asset == "BTC" or asset in config.fiat_list:
+            # Recupera il prezzo dell'asset in EUR (o la valuta configurata)
             asset_price_ccy, name, data_source, url = self.price_data.get_historical(
                 asset, config.ccy, timestamp, no_cache
             )
             self.price_report_cache(asset, timestamp, name, data_source, url, asset_price_ccy)
         else:
+            # Recupera il prezzo dell'asset in BTC
             asset_price_btc, name, data_source, url = self.price_data.get_historical(
                 asset, QuoteSymbol("BTC"), timestamp, no_cache
             )
+
             if asset_price_btc is not None:
-                (
-                    btc_price_ccy,
-                    name2,
-                    data_source2,
-                    url2,
-                ) = self.price_data.get_historical(
-                    AssetSymbol("BTC"), config.ccy, timestamp, no_cache
-                )
-                if btc_price_ccy is not None:
-                    asset_price_ccy = btc_price_ccy * asset_price_btc
+                # Se il flag return_in_btc è True, restituisci il valore in BTC
+                if return_in_btc:
+                    asset_price_ccy = asset_price_btc
+                    if config.debug:
+                        print(f"Returning {asset} price in BTC: {asset_price_btc} BTC")
+                else:
+                    # Recupera il prezzo di BTC in EUR (o altra valuta configurata)
+                    btc_price_ccy, name2, data_source2, url2 = self.price_data.get_historical(
+                        AssetSymbol("BTC"), config.ccy, timestamp, no_cache
+                    )
+                    if btc_price_ccy is not None:
+                        # Converti l'asset in EUR (o altra valuta) moltiplicando per il prezzo di BTC
+                        asset_price_ccy = btc_price_ccy * asset_price_btc
+                        if config.debug:
+                            print(f"Converted price of {asset} from BTC to {config.ccy}: {asset_price_ccy} {config.ccy}")
 
-                self.price_report_cache(
-                    AssetSymbol("BTC"), timestamp, name2, data_source2, url2, btc_price_ccy
-                )
+                    # Salva i dati del prezzo di BTC in cache
+                    self.price_report_cache(AssetSymbol("BTC"), timestamp, name2, data_source2, url2, btc_price_ccy)
 
+            # Salva i dati del prezzo dell'asset in cache
             self.price_report_cache(
                 asset,
                 timestamp,
@@ -125,7 +134,8 @@ class ValueAsset:
                 asset_price_btc,
             )
 
-        return asset_price_ccy, name, data_source
+    return asset_price_ccy, name, data_source
+
 
     def get_latest_price(
         self, asset: AssetSymbol
