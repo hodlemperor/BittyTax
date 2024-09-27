@@ -47,9 +47,8 @@
         <p>Average BTC Balance (Only Crypto): {{ daily_holdings_report[tax_year]['average']['average_btc_balance_only_crypto'] | format_decimal }}</p>
         <p>Average EUR Value (Only Crypto): {{ daily_holdings_report[tax_year]['average']['average_eur_value_only_crypto'] | valuefilter }}</p>
 
-        {% else %}
-        <p>No daily holdings report available for the year {{ tax_year }}.</p>
-        {% endif %}
+    {% else %}
+    <p>No daily holdings report available for the year {{ tax_year }}.</p>
     {% endif %}
 {% endfor %}
 
