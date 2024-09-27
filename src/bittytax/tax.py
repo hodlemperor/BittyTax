@@ -986,6 +986,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         total_btc = Decimal(0)
         total_eur = Decimal(0)
+        total_btc_crypto_only = Decimal(0)
+        total_eur_crypto_only = Decimal(0)
         days_count = (end_date - start_date).days + 1
 
         # Inizializza il report giornaliero per l'anno fiscale specifico se non esiste già
@@ -995,6 +997,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         # Cicla su tutti i giorni dell'anno fiscale o fino ad oggi se è l'anno corrente
         while current_datetime <= end_datetime:
             daily_btc_total = Decimal(0)
+            daily_btc_crypto_only = Decimal(0)
 
             for asset_symbol, holdings in self.holdings.items():
                 btc_value = Decimal(0)
@@ -1042,6 +1045,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                             if config.debug:
                                 print(f"Converted {quantity} {asset_symbol} to {btc_value} BTC")
 
+                        daily_btc_crypto_only += btc_value
+
                     daily_btc_total += btc_value
                     if config.debug:
                         print(f"daily_btc_total BTC value = {daily_btc_total}")
@@ -1053,16 +1058,21 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             daily_eur_total = daily_btc_total * btc_to_eur_price
             if config.debug:
                 print(f"daily_eur_total EUR value = {daily_eur_total}")
+            daily_eur_crypto_only = daily_btc_crypto_only * (btc_to_eur_price or Decimal(0))
 
             # Salva il saldo giornaliero in BTC e il valore in EUR nel report
             self.daily_holdings_report[tax_year][current_report_date] = DailyReportRecord(
                 btc_balance=daily_btc_total,
-                eur_value=daily_eur_total
+                eur_value=daily_eur_total,
+                btc_balance_only_crypto=daily_btc_crypto_only,
+                eur_value_only_crypto=daily_eur_crypto_only
             )
 
             # Aggiungi i valori al totale per il calcolo della giacenza media
             total_btc += daily_btc_total
             total_eur += daily_eur_total
+            total_btc_crypto_only += daily_btc_crypto_only
+            total_eur_crypto_only += daily_eur_crypto_only
 
             # Incrementa la data di un giorno
             current_datetime += timedelta(days=1)
@@ -1071,11 +1081,15 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         # Calcola la giacenza media
         average_btc = total_btc / days_count
         average_eur = total_eur / days_count
+        average_btc_crypto_only = total_btc_crypto_only / days_count
+        average_eur_crypto_only = total_eur_crypto_only / days_count
 
         # Salva la giacenza media nel report dell'anno fiscale
         self.daily_holdings_report[tax_year]['average'] = {
             'average_btc_balance': average_btc,
-            'average_eur_value': average_eur
+            'average_eur_value': average_eur,
+            'average_btc_balance_only_crypto': average_btc_crypto_only,
+            'average_eur_value_only_crypto': average_eur_crypto_only
         }
 
         return self.daily_holdings_report[tax_year]['average']
