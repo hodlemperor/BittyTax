@@ -67,6 +67,7 @@ class PriceData:
         no_cache: bool = False,
     ) -> Tuple[Optional[Decimal], AssetName, SourceUrl]:
         if data_source.upper() in self.data_sources:
+            asset = asset.strip().upper()  # Remove any whitespace from the asset symbol
             if asset in self.data_sources[data_source.upper()].assets:
                 date = Date(timestamp.date())
                 pair = TradingPair(asset + "/" + quote)
