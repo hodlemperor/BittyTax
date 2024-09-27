@@ -821,19 +821,23 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         try:
                             if year == current_year:
                                 # For the current year, use the current price
-                                price_at_end_of_year, _, _ = value_asset.get_current_value(h)
+                                value_in_fiat, _, _ = value_asset.get_current_value(h, quantity_end_of_year)
                             else:
                                 # For previous years, get the historical price at the end of the year
                                 price_at_end_of_year, _, _ = value_asset.get_historical_price(h, end_of_year_datetime_utc, no_cache=False)
 
-                            if price_at_end_of_year is not None:
-                                value_in_fiat = quantity_end_of_year * price_at_end_of_year
+                                if price_at_end_of_year is not None:
+                                    value_in_fiat = quantity_end_of_year * price_at_end_of_year
+                                    if config.debug:
+                                        print(f"Asset {h}: Price at end of year = {price_at_end_of_year}, Value in fiat = {value_in_fiat}")
+                                else:
+                                    value_in_fiat = Decimal(0)  # If no price is found, set it to 0
+                                    if config.debug:
+                                        print(f"Asset {h}: Price not found for end of year, setting value in fiat to 0")
+                            if value_in_fiat is None:
+                                value_in_fiat = Decimal(0)
                                 if config.debug:
-                                    print(f"Asset {h}: Price at end of year = {price_at_end_of_year}, Value in fiat = {value_in_fiat}")
-                            else:
-                                value_in_fiat = Decimal(0)  # If no price is found, set it to 0
-                                if config.debug:
-                                    print(f"Asset {h}: Price not found for end of year, setting value in fiat to 0")
+                                    print(f"Asset {h}: Value in fiat is None, setting to 0")
                         except requests.exceptions.HTTPError as e:
                             tqdm.write(f"Warning: Unable to get historical price for {h} on {end_of_year_datetime} due to HTTP error: {e}")
                             value_in_fiat = Decimal(0)
