@@ -134,8 +134,7 @@ class ValueAsset:
                 asset_price_btc,
             )
 
-    return asset_price_ccy, name, data_source
-
+        return asset_price_ccy, name, data_source
 
     def get_latest_price(
         self, asset: AssetSymbol
