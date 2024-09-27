@@ -21,7 +21,7 @@
                 {% for report_date, daily_data in daily_holdings_report[tax_year].items() if report_date != 'average' %}
                 <tr 
                     {% if daily_data.missing_price %} class="warning" 
-                    {% elseif tax_year <= 2022 and daily_data.eur_value_only_crypto > 51645.69 %} class="highlight" 
+                    {% elif tax_year <= 2022 and daily_data.eur_value_only_crypto > 51645.69 %} class="highlight" 
                     {% endif %}>
                     <!-- Evidenzia se il valore EUR solo crypto è maggiore di 51.645,69 per anni fino al 2022 -->
                     <td align="left">{{ report_date | format_date("%d-%m-%Y") }}</td>
