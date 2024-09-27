@@ -821,7 +821,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         try:
                             if year == current_year:
                                 # For the current year, use the current price
-                                price_at_end_of_year, _, _ = value_asset.get_current_price(h)
+                                price_at_end_of_year, _, _ = value_asset.get_current_value(h)
                             else:
                                 # For previous years, get the historical price at the end of the year
                                 price_at_end_of_year, _, _ = value_asset.get_historical_price(h, end_of_year_datetime_utc, no_cache=False)
