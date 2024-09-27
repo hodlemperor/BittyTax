@@ -968,13 +968,13 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             print(f"{Fore.CYAN}Calcolo saldi giornalieri e giacenza media per l'anno fiscale {tax_year}")
 
         current_year = datetime.now().year
-        current_date = datetime.now().date()
+        current_date = datetime.now().date() - timedelta(days=1)
 
         # Recupera le date di inizio e fine dell'anno fiscale
         start_date = self._start_of_year(tax_year)
 
         if tax_year == current_year:
-            end_date = current_date - 1 # Se è l'anno corrente, usa la data di ieri
+            end_date = current_date # Se è l'anno corrente, usa la data di ieri
         else:
             end_date = self._end_of_year(tax_year)  # Altrimenti, usa la fine dell'anno fiscale
 
