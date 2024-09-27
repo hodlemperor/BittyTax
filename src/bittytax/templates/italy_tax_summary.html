@@ -1,6 +1,4 @@
 <h1>Tax Summary (Italy)</h1>
-{% set current_year = datetime.datetime.now().year %}
-
 {% for tax_year in tax_report|sort %}
     {% if tax_year in yearly_holdings_report %}
         {% set cgains = tax_report[tax_year]['CapitalGains'] %}
