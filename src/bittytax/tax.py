@@ -749,7 +749,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         # If a tax_year is not provided, generate the report for all years excluding the current year.
         if tax_year is None:
             first_year = self._get_first_tax_year()
-            years = range(first_year, current_year)
+            years = range(first_year, current_year + 1)
             if config.debug:
                 print(f"Generating report for all years from {first_year} to {current_year}")
         else:
@@ -961,7 +961,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         :return: Un dizionario con la giacenza media in BTC e EUR.
         """
         if config.debug:
-            print(f"{Fore.CYAN}Calcolo della giacenza media per l'anno fiscale {tax_year}")
+            print(f"{Fore.CYAN}Calcolo saldi giornalieri e giacenza media per l'anno fiscale {tax_year}")
 
         current_year = datetime.now().year
         current_date = datetime.now().date()
