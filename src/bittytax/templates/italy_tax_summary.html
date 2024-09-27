@@ -58,7 +58,7 @@
 <!-- Case where prices are missing and it cannot be determined whether the threshold has been exceeded -->
         {% if threshold_report is not none and threshold_report.missing_prices is not none %}
             {% if not threshold_report.exceeded_threshold and threshold_report.missing_prices == True %}
-<div style="color: orange;">
+<div>
     <strong>Notice:</strong> It was not possible to determine whether holdings exceeded €51,645.69 for at least 7 consecutive working days due to missing prices.
 </div>
             {% endif %}
