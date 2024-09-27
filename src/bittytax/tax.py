@@ -974,7 +974,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         start_date = self._start_of_year(tax_year)
 
         if tax_year == current_year:
-            end_date = current_date  # Se è l'anno corrente, usa la data corrente
+            end_date = current_date - 1 # Se è l'anno corrente, usa la data di ieri
         else:
             end_date = self._end_of_year(tax_year)  # Altrimenti, usa la fine dell'anno fiscale
 
