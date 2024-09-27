@@ -51,7 +51,7 @@
 <!-- Case where the threshold has not been exceeded -->
         {% elif tax_year <= 2022 and threshold_report is not none and not threshold_report.exceeded_threshold and threshold_report.missing_prices == False %}
 <div style="color: green;">
-    <strong>Notice:</strong> The crypto holdings did not exceed €51,645.69 for at least 7 consecutive working days in {{ config.format_tax_year(tax_year) }}.
+    <strong>Notice:</strong> The crypto holdings did not exceed €51,645.69 for at least 7 consecutive working days (check does not include FIAT on exchanges).
 </div>
         {% endif %}
 
@@ -125,5 +125,9 @@
         {% endif %}
     </tr>
 </table>
+
+<div style="color: orange;">
+    <strong>Notice:</strong> Table include all FIAT and Crypto holdings anywhere.
+</div>
     {% endif %}
 {% endfor %}

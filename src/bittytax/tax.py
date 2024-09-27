@@ -792,13 +792,22 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             # Cycle on each asset in holdings with progress bar
             for h in tqdm(self.holdings, unit="asset", desc=f"Processing year {year}", leave=False):
                 holdings = self.holdings[h]
-                # Get quantity at the end of the year (or current date if it's the current year)
-                quantity_end_of_year = holdings.get_balance_at_date(end_of_year_date)
 
-                # Quantity check (exclude if zero, unless config.show_empty_wallets is enabled)
-                if quantity_end_of_year > 0 or config.show_empty_wallets:
+                # Check if the asset had a positive balance on any day of the year
+                had_positive_balance_during_year = False
+                for day in (start_of_year_date + timedelta(days=n) for n in range((end_of_year_date - start_of_year_date).days + 1)):
+                    quantity_at_day = holdings.get_balance_at_date(day)
+                    if quantity_at_day > 0:
+                        had_positive_balance_during_year = True
+                        break
+
+                # Quantity check (exclude if no positive balance, unless config.show_empty_wallets is enabled)
+                if had_positive_balance_during_year:
                     if config.debug:
                         print(f"Processing asset {h} for year {year}")
+
+                    # Get quantity at the end of the year (or current date if it's the current year)
+                    quantity_end_of_year = holdings.get_balance_at_date(end_of_year_date)
 
                     # Calculate average balance and days held
                     average_balance = holdings.calculate_average_balance(start_of_year_date, end_of_year_date)
@@ -1070,7 +1079,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         }
 
         return self.daily_holdings_report[tax_year]['average']
-
 
 class CalculateCapitalGains:
     # Rate changes start from 6th April in previous year, i.e. 2022 is for tax year 2021/22
