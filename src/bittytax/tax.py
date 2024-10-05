@@ -782,6 +782,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
             # Get the start-of-year date
             start_of_year_date = self._start_of_year(year)
+            start_of_year_datetime = datetime.combine(start_of_year_date, time.min)
+            start_of_year_datetime_utc = start_of_year_datetime.replace(tzinfo=timezone.utc)
 
             assets_report = {}
             total_value_in_fiat = Decimal(0)  # Initialize the sum to 0 for the year
@@ -805,6 +807,25 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 if had_positive_balance_during_year:
                     if config.debug:
                         print(f"Processing asset {h} for year {year}")
+
+                    # Quantità a inizio anno
+                    quantity_start_of_year = holdings.get_balance_at_date(start_of_year_date)
+
+                    # Valore in fiat a inizio anno
+                    if holdings.is_crypto():
+                        try:
+                            price_at_start_of_year, _, _ = value_asset.get_historical_price(h, start_of_year_datetime_utc, no_cache=False)
+                            if price_at_start_of_year is not None:
+                                value_in_fiat_start_of_year = quantity_start_of_year * price_at_start_of_year
+                            else:
+                                value_in_fiat_start_of_year = Decimal(0)
+                        except requests.exceptions.HTTPError as e:
+                            tqdm.write(f"Warning: Unable to get historical price for {h} on {start_of_year_datetime} due to HTTP error: {e}")
+                            value_in_fiat_start_of_year = Decimal(0)
+                    elif holdings.is_fiat():
+                        value_in_fiat_start_of_year = quantity_start_of_year
+                    else:
+                        value_in_fiat_start_of_year = Decimal(0)
 
                     # Get quantity at the end of the year (or current date if it's the current year)
                     quantity_end_of_year = holdings.get_balance_at_date(end_of_year_date)
@@ -854,6 +875,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
                     # Save details in report
                     assets_report[h] = YearlyReportAsset(
+                        quantity_start_of_year=quantity_start_of_year,
+                        value_in_fiat_start_of_year=value_in_fiat_start_of_year,
                         quantity_end_of_year=quantity_end_of_year,
                         average_balance=average_balance,
                         value_in_fiat_at_end_of_year=value_in_fiat,
