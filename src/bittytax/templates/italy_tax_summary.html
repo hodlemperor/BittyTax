@@ -96,7 +96,11 @@
             <td align="left">{{ asset_symbol }}</td>
             <td align="right">{{ asset_data.quantity_start_of_year | format_decimal }}</td>
             <td align="right">{{ asset_data.quantity_end_of_year | format_decimal }}</td>
+            {% if asset_symbol == 'EUR' %}
+            <td align="right">{{ asset_data.average_balance | valuefilter }}</td>
+            {% else %}
             <td align="right">{{ asset_data.average_balance | format_decimal }}</td>
+            {% endif %}
             <td align="right">{{ asset_data.days_held }}</td>
             <td align="right">{{ asset_data.value_in_fiat_start_of_year | valuefilter }}</td>
             {% if asset_data.value_in_fiat_at_end_of_year is not none %}
