@@ -38,6 +38,7 @@ from .tax import (
     CapitalGainsReportTotal,
     HoldingsReportRecord,
     YearlyReportRecord,
+    YearlyReportRecordPerWallet,
     TaxReportRecord,
     DailyReportRecord,
 )
@@ -64,6 +65,7 @@ class ReportPdf:
         price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
         yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]] = None,
+        yearly_holdings_report_per_wallet: Optional[Dict[Year, YearlyReportRecordPerWallet]] = None,
         daily_holdings_report: Optional[Dict[Year, Dict[date, DailyReportRecord]]] = {}
     ) -> None:
         self.env = jinja2.Environment(loader=jinja2.PackageLoader("bittytax", "templates"))
@@ -123,6 +125,7 @@ class ReportPdf:
                     "price_report": price_report,
                     "holdings_report": holdings_report,
                     "yearly_holdings_report": yearly_holdings_report,
+                    "yearly_holdings_report_per_wallet": yearly_holdings_report_per_wallet,
                     "daily_holdings_report": daily_holdings_report,
                     "matching_method": config.matching_method,
                     "decimal": decimal,
@@ -252,6 +255,7 @@ class ReportLog:
         price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
         yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]] = None,
+        yearly_holdings_report_per_wallet: Optional[Dict[Year, YearlyReportRecordPerWallet]] = None,
         daily_holdings_report: Optional[Dict[Year, Dict[date, DailyReportRecord]]] = {},
     ) -> None:
         if args.audit_only:
@@ -271,7 +275,7 @@ class ReportLog:
             if price_report is None:
                 raise RuntimeError("Missing price_report")
 
-            self._tax_full(args.tax_rules, audit, tax_report, price_report, holdings_report, yearly_holdings_report, daily_holdings_report)
+            self._tax_full(args.tax_rules, audit, tax_report, price_report, holdings_report, yearly_holdings_report, yearly_holdings_report_per_wallet, daily_holdings_report)
 
     def _tax_summary(
         self,
@@ -334,6 +338,7 @@ class ReportLog:
         price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]],
         holdings_report: Optional[HoldingsReportRecord],
         yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]],
+        yearly_holdings_report_per_wallet: Optional[Dict[Year, YearlyReportRecordPerWallet]],
         daily_holdings_report: Optional[Dict[Year, Dict[date, DailyReportRecord]]],
     ) -> None:
         print(f"{Fore.WHITE}tax report output:")
@@ -394,6 +399,9 @@ class ReportLog:
             self._yearly_holdings(yearly_holdings_report)
 
         # da implementare
+        #if yearly_holdings_report_per_wallet:
+        #    self._yearly_holdings_per_wallet(yearly_holdings_report_per_wallet)
+
         #if daily_holdings_report:
         #    self._daily_holdings(daily_holdings_report)
 
