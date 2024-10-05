@@ -67,20 +67,22 @@
     <thead>
         <tr>
             <th align="left">Asset</th>
+            <th align="right">Qty Start {{ config.get_tax_year_start(tax_year) | format_date("%d/%m") }}</th>
+            <th align="right">Val Start (€)</th>
             <th align="right">
                 {% if tax_year == current_year %}
-                    Quantity at {{ "today" | format_date("%d/%m") }}
+                    Qty End {{ "today" | format_date("%d/%m") }}
                 {% else %}
-                    Quantity at {{ config.get_tax_year_end(tax_year) | format_date("%d/%m") }}
+                    Qty End {{ config.get_tax_year_end(tax_year) | format_date("%d/%m") }}
                 {% endif %}
             </th>
-            <th align="right">Average Balance</th>
+            <th align="right">Avg Bal</th>
             <th align="right">Days Held</th>
             <th align="right">
                 {% if tax_year == current_year %}
-                    Value (Fiat) at {{ "today" | format_date("%d/%m") }}
+                    Val End (€) {{ "today" | format_date("%d/%m") }}
                 {% else %}
-                    Value (Fiat) at {{ config.get_tax_year_end(tax_year) | format_date("%d/%m") }}
+                    Val End (€) {{ config.get_tax_year_end(tax_year) | format_date("%d/%m") }}
                 {% endif %}
             </th>
             {% if tax_year >= 2023 %}
@@ -92,6 +94,8 @@
         {% for asset_symbol, asset_data in yearly_holdings_report[tax_year].assets.items() %}
         <tr>
             <td align="left">{{ asset_symbol }}</td>
+            <td align="right">{{ asset_data.quantity_start_of_year | format_decimal }}</td>
+            <td align="right">{{ asset_data.value_in_fiat_start_of_year | valuefilter }}</td>
             <td align="right">{{ asset_data.quantity_end_of_year | format_decimal }}</td>
             <td align="right">{{ asset_data.average_balance | format_decimal }}</td>
             <td align="right">{{ asset_data.days_held }}</td>
@@ -115,12 +119,12 @@
 <table class="total-table">
     <tr>
         <td align="left"><strong>Total</strong></td>
-        <td></td>
+        <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_start_of_year | valuefilter }}</strong></td>
         <td></td>
         <td></td>
         <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_at_end_of_year | valuefilter }}</strong></td>
         {% if tax_year >= 2023 %}
-        <td align="right"><strong>{{ (yearly_holdings_report[tax_year].totals.total_value_in_fiat_at_end_of_year * decimal.Decimal('0.02')) | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ (yearly_holdings_report[tax_year].totals.total_value_in_fiat_at_end_of_year * decimal.Decimal('0.002')) | valuefilter }}</strong></td>
         {% endif %}
     </tr>
 </table>
@@ -130,3 +134,4 @@
 </div>
     {% endif %}
 {% endfor %}
+
