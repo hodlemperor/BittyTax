@@ -893,7 +893,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             yearly_holdings_report[year] = YearlyReportRecord(
                 assets=assets_report,
                 totals=YearlyReportTotal(
-                    total_value_in_fiat_start_of_year=total_value_in_fiat_start_of_year
+                    total_value_in_fiat_start_of_year=total_value_in_fiat_start_of_year,
                     total_value_in_fiat_at_end_of_year=total_value_in_fiat
                 )
             )
