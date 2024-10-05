@@ -339,6 +339,7 @@ def _do_each_tax_year(
 
         if not summary_only:
             tax.calculate_yearly_holdings(value_asset, tax_year)
+            tax.calculate_yearly_holdings_per_wallet(value_asset, tax_year)
             tax.check_holding_threshold(value_asset, tax_year)
             tax.calculate_daily_holdings_and_average(value_asset, tax_year)
 
@@ -363,6 +364,7 @@ def _do_each_tax_year(
         if not summary_only:
             tax.calculate_holdings(value_asset)
             tax.calculate_yearly_holdings(value_asset)
+            tax.calculate_yearly_holdings_per_wallet(value_asset)
             for year in sorted(tax.tax_events):
                 if year in CCG.CG_DATA_INDIVIDUAL:
                     tax.check_holding_threshold(value_asset, year)

@@ -3,6 +3,7 @@
     {% if tax_year in yearly_holdings_report %}
         {% set cgains = tax_report[tax_year]['CapitalGains'] %}
         {% set margin = tax_report[tax_year]['MarginTrading'] %}
+        {% set yearly_holdings_per_wallet = yearly_holdings_report_per_wallet[tax_year] if tax_year in yearly_holdings_report_per_wallet else None %}
 
 <h2 style="text-align: center;">{{ config.format_tax_year(tax_year) }}</h2>
 
@@ -102,7 +103,6 @@
             {% endif %}
             {% else %}
             <td align="right"><i>Not available</i></td>
-            <td align="right"><i>Not available</i></td>
             {% if tax_year >= 2023 %}
             <td align="right"><i>Not available</i></td>
             {% endif %}
@@ -124,6 +124,35 @@
         {% endif %}
     </tr>
 </table>
+
+{% if yearly_holdings_per_wallet is not none %}
+<h3>Holdings by Wallet</h3>
+{% for wallet, wallet_data in yearly_holdings_per_wallet.wallets.items() %}
+    <h4>Wallet: {{ wallet }}</h4>
+    <table repeat="1" width="100%" class="asset-table">
+        <thead>
+            <tr>
+                <th align="left">Asset</th>
+                <th align="right">Quantity at Year End</th>
+                <th align="right">Average Balance</th>
+                <th align="right">Days Held</th>
+                <th align="right">Value in Fiat at Year End</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for asset, data in wallet_data.items() %}
+            <tr>
+                <td align="left">{{ asset }}</td>
+                <td align="right">{{ data.quantity_end_of_year | format_decimal }}</td>
+                <td align="right">{{ data.average_balance | format_decimal }}</td>
+                <td align="right">{{ data.days_held }}</td>
+                <td align="right">{{ data.value_in_fiat_at_end_of_year | valuefilter }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endfor %}
+{% endif %}
 
 <div>
     <strong>Notice:</strong> Table include all FIAT and Crypto holdings anywhere.
