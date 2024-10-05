@@ -1006,8 +1006,14 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         # Calcola il valore in fiat a fine anno
                         if holding['quantity_end_of_year'] > 0:
                             try:
-                                price_at_end_of_year, _, _ = value_asset.get_historical_price(asset, end_of_year_datetime_utc)
-                                holding['value_in_fiat_at_end_of_year'] = holding['quantity_end_of_year'] * price_at_end_of_year
+                                if year == current_year:
+                                    # Se è l'anno corrente, utilizza il prezzo corrente
+                                    value_in_fiat, _, _ = value_asset.get_current_value(asset, holding['quantity_end_of_year'])
+                                    holding['value_in_fiat_at_end_of_year'] = value_in_fiat
+                                else:
+                                    # Per gli anni passati, ottieni il prezzo storico alla fine dell'anno
+                                    price_at_end_of_year, _, _ = value_asset.get_historical_price(asset, end_of_year_datetime_utc)
+                                    holding['value_in_fiat_at_end_of_year'] = holding['quantity_end_of_year'] * price_at_end_of_year
                             except requests.exceptions.HTTPError as e:
                                 tqdm.write(f"Warning: Unable to get historical price for {asset} on {end_of_year_date} due to HTTP error: {e}")
                                 holding['value_in_fiat_at_end_of_year'] = Decimal(0)
