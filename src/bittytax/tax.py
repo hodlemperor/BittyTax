@@ -68,6 +68,8 @@ class HoldingsReportRecord(TypedDict):  # pylint: disable=too-few-public-methods
     totals: HoldingsReportTotal
 
 class YearlyReportAsset(TypedDict):
+    quantity_start_of_year: Decimal
+    value_in_fiat_start_of_year: Decimal
     quantity_end_of_year: Decimal
     average_balance: Decimal
     value_in_fiat_at_end_of_year: Decimal
@@ -787,6 +789,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
             assets_report = {}
             total_value_in_fiat = Decimal(0)  # Initialize the sum to 0 for the year
+            total_value_in_fiat_start_of_year = Decimal(0)  # Initialize the sum to 0 for the year
 
             if config.debug:
                 print(f"Processing year {year}: from {start_of_year_date} to {end_of_year_date}")
@@ -826,6 +829,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         value_in_fiat_start_of_year = quantity_start_of_year
                     else:
                         value_in_fiat_start_of_year = Decimal(0)
+
+                    # Add to total value in fiat at start of year
+                    total_value_in_fiat_start_of_year += value_in_fiat_start_of_year
 
                     # Get quantity at the end of the year (or current date if it's the current year)
                     quantity_end_of_year = holdings.get_balance_at_date(end_of_year_date)
@@ -887,6 +893,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             yearly_holdings_report[year] = YearlyReportRecord(
                 assets=assets_report,
                 totals=YearlyReportTotal(
+                    total_value_in_fiat_start_of_year=total_value_in_fiat_start_of_year
                     total_value_in_fiat_at_end_of_year=total_value_in_fiat
                 )
             )
