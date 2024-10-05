@@ -738,53 +738,46 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         return first_year
 
-    def calculate_yearly_holdings(self, value_asset: ValueAsset, tax_year: Optional[int] = None) -> None:
+    def calculate_yearly_holdings_per_wallet(self, value_asset: ValueAsset, tax_year: Optional[int] = None) -> None:
         """
-        Calculate the annual holdings for each asset held with a fiat value and quantity.
-        If a tax_year is given, generate the report for that year only.
-        Save the report in self.yearly_holdings_report.
+        Calcola gli holdings annuali per ogni asset posseduto suddiviso per wallet, con valore in valuta fiat e quantità.
+        Se viene fornito un `tax_year`, genera il report per quell'anno specifico.
+        Salva il report in `self.yearly_holdings_report_per_wallet`.
 
-        :param value_asset: The ValueAsset instance to get historical prices.
-        :param tax_year: (optional) The tax year to generate the report for.
+        :param value_asset: L'istanza di ValueAsset per ottenere i prezzi storici.
+        :param tax_year: (opzionale) L'anno fiscale per cui generare il report.
         """
         if config.debug:
-            print(f"{Fore.CYAN}Calculating yearly holdings")
+            print(f"{Fore.CYAN}Calculating yearly holdings per wallet")
 
         current_year = datetime.now().year
         current_date = datetime.now().date()
 
-        # If a tax_year is not provided, generate the report for all years excluding the current year.
+        # Se non viene fornito un `tax_year`, genera il report per tutti gli anni fino all'anno corrente.
         if tax_year is None:
             first_year = self._get_first_tax_year()
             years = range(first_year, current_year + 1)
             if config.debug:
                 print(f"Generating report for all years from {first_year} to {current_year}")
         else:
-            # If tax_year is in the future, raise an exception
+            # Se `tax_year` è nel futuro, solleva un'eccezione
             if tax_year > current_year:
                 raise ValueError("Future years cannot be selected.")
-            years = [tax_year]  # Only the specified fiscal year
+            years = [tax_year]
             if config.debug:
                 print(f"Generating report for the year {tax_year}")
 
-        yearly_holdings_report = {}
+        yearly_holdings_report_per_wallet = {}
 
-        if self.yearly_holdings_report is None:
-            self.yearly_holdings_report = {}
-
-        # Cycle through each fiscal year with progress bar
-        for year in tqdm(years, desc=f"{Fore.CYAN}Generating yearly report{Fore.GREEN}"):
+        # Cicla attraverso ogni anno fiscale con una barra di progresso
+        for year in tqdm(years, desc=f"{Fore.CYAN}Generating yearly report per wallet{Fore.GREEN}"):
             if year == current_year:
-                # If it's the current year, we use the current date instead of the end of the year
                 end_of_year_date = current_date
             else:
-                # Get end-of-year date (just the date part)
                 end_of_year_date = self._end_of_year(year)
 
             # Get end-of-year datetime (date + time)
-            end_of_year_datetime = datetime.combine(end_of_year_date, time.min)  # This is a datetime (with time)
-
-            # Convert end_of_year_datetime in UTC
+            end_of_year_datetime = datetime.combine(end_of_year_date, time.min)
             end_of_year_datetime_utc = end_of_year_datetime.replace(tzinfo=timezone.utc)
 
             # Get the start-of-year date
@@ -792,118 +785,98 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             start_of_year_datetime = datetime.combine(start_of_year_date, time.min)
             start_of_year_datetime_utc = start_of_year_datetime.replace(tzinfo=timezone.utc)
 
-            assets_report = {}
-            total_value_in_fiat = Decimal(0)  # Initialize the sum to 0 for the year
+            wallets_report = {}
+            total_value_in_fiat_per_wallet = {}
 
-            if config.debug:
-                print(f"Processing year {year}: from {start_of_year_date} to {end_of_year_date}")
+            # Cicla attraverso ogni transazione per popolare i dati per ogni wallet
+            for t in self.transactions:
+                if t.timestamp.year != year:
+                    continue
 
-            # Cycle on each asset in holdings with progress bar
-            for h in tqdm(self.holdings, unit="asset", desc=f"Processing year {year}", leave=False):
-                holdings = self.holdings[h]
+                wallet = t.wallet
+                asset = t.asset
 
-                # Check if the asset had a positive balance on any day of the year
-                had_positive_balance_during_year = False
-                for day in (start_of_year_date + timedelta(days=n) for n in range((end_of_year_date - start_of_year_date).days + 1)):
-                    quantity_at_day = holdings.get_balance_at_date(day)
-                    if quantity_at_day > 0:
-                        had_positive_balance_during_year = True
-                        break
+                if wallet not in wallets_report:
+                    wallets_report[wallet] = {}
+                    total_value_in_fiat_per_wallet[wallet] = Decimal(0)
 
-                # Quantity check (exclude if no positive balance, unless config.show_empty_wallets is enabled)
-                if had_positive_balance_during_year:
-                    if config.debug:
-                        print(f"Processing asset {h} for year {year}")
+                if asset not in wallets_report[wallet]:
+                    wallets_report[wallet][asset] = {
+                        'quantity_start_of_year': Decimal(0),
+                        'quantity_end_of_year': Decimal(0),
+                        'average_balance': Decimal(0),
+                        'value_in_fiat_start_of_year': Decimal(0),
+                        'value_in_fiat_at_end_of_year': Decimal(0),
+                        'days_held': 0
+                    }
 
-                    # Quantità a inizio anno
-                    quantity_start_of_year = holdings.get_balance_at_date(start_of_year_date)
+                holding = wallets_report[wallet][asset]
 
-                    # Valore in fiat a inizio anno
-                    if holdings.is_crypto():
-                        try:
-                            price_at_start_of_year, _, _ = value_asset.get_historical_price(h, start_of_year_datetime_utc, no_cache=False)
-                            if price_at_start_of_year is not None:
-                                value_in_fiat_start_of_year = quantity_start_of_year * price_at_start_of_year
-                            else:
-                                value_in_fiat_start_of_year = Decimal(0)
-                        except requests.exceptions.HTTPError as e:
-                            tqdm.write(f"Warning: Unable to get historical price for {h} on {start_of_year_datetime} due to HTTP error: {e}")
-                            value_in_fiat_start_of_year = Decimal(0)
-                    elif holdings.is_fiat():
-                        value_in_fiat_start_of_year = quantity_start_of_year
-                    else:
-                        value_in_fiat_start_of_year = Decimal(0)
+                # Quantità a inizio anno
+                if t.timestamp <= start_of_year_datetime_utc:
+                    holding['quantity_start_of_year'] += t.quantity
 
-                    # Get quantity at the end of the year (or current date if it's the current year)
-                    quantity_end_of_year = holdings.get_balance_at_date(end_of_year_date)
+                # Quantità a fine anno
+                if t.timestamp <= end_of_year_datetime_utc:
+                    holding['quantity_end_of_year'] += t.quantity
 
-                    # Calculate average balance and days held
-                    average_balance = holdings.calculate_average_balance(start_of_year_date, end_of_year_date)
-                    days_held = holdings.calculate_days_held(start_of_year_date, end_of_year_date)
-
-                    if config.debug:
-                        print(f"Asset {h}: Quantity at end of year = {quantity_end_of_year}, Average balance = {average_balance}")
-
-                    if holdings.is_crypto():
-                        # If it's a crypto asset, get the historical price
-                        try:
-                            if year == current_year:
-                                # For the current year, use the current price
-                                value_in_fiat, _, _ = value_asset.get_current_value(h, quantity_end_of_year)
-                            else:
-                                # For previous years, get the historical price at the end of the year
-                                price_at_end_of_year, _, _ = value_asset.get_historical_price(h, end_of_year_datetime_utc, no_cache=False)
-
-                                if price_at_end_of_year is not None:
-                                    value_in_fiat = quantity_end_of_year * price_at_end_of_year
-                                    if config.debug:
-                                        print(f"Asset {h}: Price at end of year = {price_at_end_of_year}, Value in fiat = {value_in_fiat}")
+            # Ciclo su ogni asset del wallet per calcolare valori
+            for wallet, assets in wallets_report.items():
+                for asset, holding in assets.items():
+                    # Quantity check (exclude if no positive balance, unless config.show_empty_wallets is enabled)
+                    if holding['quantity_start_of_year'] > 0 or holding['quantity_end_of_year'] > 0 or config.show_empty_wallets:
+                        # Calcola il valore in fiat a inizio anno
+                        if holding['quantity_start_of_year'] > 0:
+                            try:
+                                price_at_start_of_year, _, _ = value_asset.get_historical_price(asset, start_of_year_datetime_utc)
+                                if price_at_start_of_year is not None:
+                                    holding['value_in_fiat_start_of_year'] = holding['quantity_start_of_year'] * price_at_start_of_year
                                 else:
-                                    value_in_fiat = Decimal(0)  # If no price is found, set it to 0
                                     if config.debug:
-                                        print(f"Asset {h}: Price not found for end of year, setting value in fiat to 0")
-                            if value_in_fiat is None:
-                                value_in_fiat = Decimal(0)
-                                if config.debug:
-                                    print(f"Asset {h}: Value in fiat is None, setting to 0")
-                        except requests.exceptions.HTTPError as e:
-                            tqdm.write(f"Warning: Unable to get historical price for {h} on {end_of_year_datetime} due to HTTP error: {e}")
-                            value_in_fiat = Decimal(0)
-                            if config.debug:
-                                print(f"Asset {h}: HTTP error, setting value in fiat to 0")
-                    if holdings.is_fiat():
-                        # If it is not a cryptocurrency, use the amount directly as fiat value
-                        value_in_fiat = quantity_end_of_year
-                        if config.debug:
-                            print(f"Asset {h} is not a cryptocurrency, using quantity as value in fiat: {value_in_fiat}")
+                                        print(f"Warning: Historical price for {asset} on {start_of_year_date} is None. Setting value to 0.")
+                                    holding['value_in_fiat_start_of_year'] = Decimal(0)
+                            except requests.exceptions.HTTPError as e:
+                                tqdm.write(f"Warning: Unable to get historical price for {asset} on {start_of_year_date} due to HTTP error: {e}")
+                                holding['value_in_fiat_start_of_year'] = Decimal(0)
 
-                    # Add the fiat value to the annual sum
-                    total_value_in_fiat += value_in_fiat
+                        # Calcola il valore in fiat a fine anno
+                        if holding['quantity_end_of_year'] > 0:
+                            try:
+                                if year == current_year:
+                                    # Se è l'anno corrente, utilizza il prezzo corrente
+                                    value_in_fiat, _, _ = value_asset.get_current_value(asset, holding['quantity_end_of_year'])
+                                    if value_in_fiat is not None:
+                                        holding['value_in_fiat_at_end_of_year'] = value_in_fiat
+                                    else:
+                                        holding['value_in_fiat_at_end_of_year'] = Decimal(0)
+                                else:
+                                    # Per gli anni passati, ottieni il prezzo storico alla fine dell'anno
+                                    price_at_end_of_year, _, _ = value_asset.get_historical_price(asset, end_of_year_datetime_utc)
+                                    if price_at_end_of_year is not None:
+                                        holding['value_in_fiat_at_end_of_year'] = holding['quantity_end_of_year'] * price_at_end_of_year
+                                    else:
+                                        if config.debug:
+                                            print(f"Warning: Historical price for {asset} on {end_of_year_date} is None. Setting value to 0.")
+                                        holding['value_in_fiat_at_end_of_year'] = Decimal(0)
+                            except requests.exceptions.HTTPError as e:
+                                tqdm.write(f"Warning: Unable to get historical price for {asset} on {end_of_year_date} due to HTTP error: {e}")
+                                holding['value_in_fiat_at_end_of_year'] = Decimal(0)
 
-                    # Save details in report
-                    assets_report[h] = YearlyReportAsset(
-                        quantity_start_of_year=quantity_start_of_year,
-                        value_in_fiat_start_of_year=value_in_fiat_start_of_year,
-                        quantity_end_of_year=quantity_end_of_year,
-                        average_balance=average_balance,
-                        value_in_fiat_at_end_of_year=value_in_fiat,
-                        days_held=days_held
-                    )
+                        # Calcola giorni di possesso e bilancio medio usando le funzioni esistenti
+                        holding['days_held'] = self.holdings[asset].calculate_days_held(start_of_year_date, end_of_year_date)
+                        holding['average_balance'] = self.holdings[asset].calculate_average_balance(start_of_year_date, end_of_year_date)
 
-            # Save the total amount in the report
-            yearly_holdings_report[year] = YearlyReportRecord(
-                assets=assets_report,
-                totals=YearlyReportTotal(
-                    total_value_in_fiat_at_end_of_year=total_value_in_fiat
-                )
+                        total_value_in_fiat_per_wallet[wallet] += holding['value_in_fiat_at_end_of_year']
+
+            # Salva il report per l'anno specifico
+            yearly_holdings_report_per_wallet[year] = YearlyReportRecordPerWallet(
+                wallets=wallets_report,
+                totals=total_value_in_fiat_per_wallet
             )
 
-            if config.debug:
-                print(f"Year {year}: Total value in fiat at end of year = {total_value_in_fiat}")
-
-        # Save the report in the self.yearly_holdings_report instance field
-        self.yearly_holdings_report = yearly_holdings_report
-        tqdm.write("Yearly report saved to self.yearly_holdings_report.")
+        # Salva il report nella classe
+        self.yearly_holdings_report_per_wallet = yearly_holdings_report_per_wallet
+        tqdm.write("Yearly holdings report per wallet saved to self.yearly_holdings_report_per_wallet.")
 
     def calculate_yearly_holdings_per_wallet(self, value_asset: ValueAsset, tax_year: Optional[int] = None) -> None:
         """
@@ -1013,7 +986,13 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                                 else:
                                     # Per gli anni passati, ottieni il prezzo storico alla fine dell'anno
                                     price_at_end_of_year, _, _ = value_asset.get_historical_price(asset, end_of_year_datetime_utc)
-                                    holding['value_in_fiat_at_end_of_year'] = holding['quantity_end_of_year'] * price_at_end_of_year
+
+                                    # Verifica che price_at_end_of_year non sia None
+                                    if price_at_end_of_year is not None:
+                                        holding['value_in_fiat_at_end_of_year'] = holding['quantity_end_of_year'] * price_at_end_of_year
+                                    else:
+                                        tqdm.write(f"Warning: Historical price for {asset} on {end_of_year_date} is None.")
+                                        holding['value_in_fiat_at_end_of_year'] = Decimal(0)
                             except requests.exceptions.HTTPError as e:
                                 tqdm.write(f"Warning: Unable to get historical price for {asset} on {end_of_year_date} due to HTTP error: {e}")
                                 holding['value_in_fiat_at_end_of_year'] = Decimal(0)
