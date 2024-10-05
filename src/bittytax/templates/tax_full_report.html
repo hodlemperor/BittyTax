@@ -28,7 +28,7 @@
                 <pdf:nextpage />
             {% endif %}
         {% endfor %}
-        {% if yearly_holdings_report %}
+        {% if yearly_holdings_report or yearly_holdings_report_per_wallet %}
             <pdf:nextpage />
             {% include "italy_tax_summary.html" %}
         {% endif %}
