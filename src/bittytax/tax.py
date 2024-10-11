@@ -621,9 +621,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         else:
             calc_cgt.tax_estimate_cgt(tax_year)
 
-        # Calcola il total_gain_margin per l'anno fiscale corrente
-        total_gain_margin = self.calculate_total_gain_with_margin(tax_year)
-
         # Calcola la sanzione in base al total_gain_margin appena calcolato
         self.calculate_penalty_due()
 
@@ -1140,21 +1137,18 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         print(f"Giacenza media calcolata per l'anno fiscale {tax_year}: {average_btc} BTC, {average_eur} EUR")
 
-    def calculate_total_gain_with_margin(self, tax_year: Year) -> Decimal:
-        # Calcola i guadagni di capital gain
-        calc_cgt = self.calculate_capital_gains(tax_year)
-        
+    def calculate_total_gain_with_margin(self, calc_cgt: CalculateCapitalGains, tax_year: Year) -> Decimal:
         # Calcola i guadagni e le perdite del margin trading
         calc_margin = self.calculate_margin_trading(tax_year)
-        
+    
         # Somma i guadagni complessivi con quelli da margin trading
         total_gain = calc_cgt.short_term_totals["gain"] + calc_cgt.long_term_totals["gain"]
         total_gain_margin = total_gain + calc_margin.totals['gains'] - calc_margin.totals['losses']
-        
+    
         if config.debug:
             print(f"Total Gain: {total_gain}")
             print(f"Total Gain with Margin: {total_gain_margin}")
-        
+    
         return total_gain_margin
 
     def calculate_penalty_due(self) -> None:
