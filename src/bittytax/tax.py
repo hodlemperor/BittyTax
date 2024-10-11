@@ -77,6 +77,7 @@ class YearlyReportAsset(TypedDict):
 
 class YearlyReportTotal(TypedDict):
     total_value_in_fiat_at_end_of_year: Decimal
+    penalty_due: Decimal
 
 class YearlyReportRecord(TypedDict):
     assets: Dict[AssetSymbol, YearlyReportAsset]
@@ -889,12 +890,20 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         days_held=days_held
                     )
 
+            # Calcola la sanzione per il valore finale in EUR dell'anno
+            penalty_due = calcola_sanzioni_annuali(
+                total_value_in_fiat,
+                paese_cooperante=True,  # Modifica se necessario
+                giorni_ritardo=None  # Aggiungi i giorni di ritardo se applicabile
+            )
+        
             # Save the total amount in the report
             yearly_holdings_report[year] = YearlyReportRecord(
                 assets=assets_report,
                 totals=YearlyReportTotal(
                     total_value_in_fiat_start_of_year=total_value_in_fiat_start_of_year,
-                    total_value_in_fiat_at_end_of_year=total_value_in_fiat
+                    total_value_in_fiat_at_end_of_year=total_value_in_fiat,
+                    penalty_due=penalty_due
                 )
             )
 
@@ -1121,31 +1130,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             print(f"Average BTC (Crypto Only): {average_btc_crypto_only}, Average EUR (Crypto Only): {average_eur_crypto_only}")
 
         print(f"Giacenza media calcolata per l'anno fiscale {tax_year}: {average_btc} BTC, {average_eur} EUR")
-
-    def calcola_sanzioni_annuali(self, average_eur_value, paese_cooperante=True, giorni_ritardo=None):
-        """
-        Calcola le sanzioni annuali per omessa dichiarazione di conti esteri.
-
-        :param average_eur_value: Il valore medio annuale del conto in EUR
-        :param paese_cooperante: Se il paese è cooperante per lo scambio di informazioni fiscali
-        :param giorni_ritardo: Numero di giorni di ritardo per calcolare la riduzione del ravvedimento operoso
-        :return: L'importo della sanzione annuale, con o senza riduzione
-        """
-        # Determina l'aliquota di base
-        sanzione_base = average_eur_value * (0.03 if paese_cooperante else 0.06)
-
-        # Calcola la riduzione se ravvedimento operoso è applicabile
-        if giorni_ritardo is not None:
-            if giorni_ritardo <= 90:
-                sanzione_base /= 9  # Riduzione a 1/9
-            elif giorni_ritardo <= 365:
-                sanzione_base /= 8  # Riduzione a 1/8
-            elif giorni_ritardo <= 730:
-                sanzione_base /= 7  # Riduzione a 1/7
-            else:
-                sanzione_base /= 6  # Riduzione a 1/6
-
-        return sanzione_base
 
 class CalculateCapitalGains:
     # Rate changes start from 6th April in previous year, i.e. 2022 is for tax year 2021/22
@@ -1529,3 +1513,28 @@ class CalculateMarginTrading:
             f'losses={config.sym()}{self.contract_totals[(wallet, note)]["losses"]} '
             f'fess={config.sym()}{self.contract_totals[(wallet, note)]["fees"]} '
         )
+
+def calcola_sanzioni_annuali(average_eur_value: Decimal, paese_cooperante: bool = True, giorni_ritardo: Optional[int] = None) -> Decimal:
+    """
+    Calcola la sanzione annuale per omessa dichiarazione.
+    
+    :param average_eur_value: Il valore medio annuale del conto in EUR
+    :param paese_cooperante: True se il paese è cooperante, False altrimenti
+    :param giorni_ritardo: Numero di giorni di ritardo per il ravvedimento operoso, None se non applicabile
+    :return: L'importo della sanzione annuale, con o senza riduzione
+    """
+    # Determina l'aliquota di base in base al paese
+    sanzione_base = average_eur_value * (Decimal('0.03') if paese_cooperante else Decimal('0.06'))
+
+    # Applica riduzione in base ai giorni di ritardo (ravvedimento operoso)
+    if giorni_ritardo is not None:
+        if giorni_ritardo <= 90:
+            sanzione_base /= Decimal('9')  # Riduzione a 1/9
+        elif giorni_ritardo <= 365:
+            sanzione_base /= Decimal('8')  # Riduzione a 1/8
+        elif giorni_ritardo <= 730:
+            sanzione_base /= Decimal('7')  # Riduzione a 1/7
+        else:
+            sanzione_base /= Decimal('6')  # Riduzione a 1/6
+
+    return sanzione_base
