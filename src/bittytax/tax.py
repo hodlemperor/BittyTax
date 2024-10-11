@@ -88,9 +88,11 @@ class YearlyReportAsset(TypedDict):
     days_held: int 
 
 class YearlyReportTotal(TypedDict):
+    total_value_in_fiat_start_of_year: Decimal
     total_value_in_fiat_at_end_of_year: Decimal
-    penalty_due_rw: Optional[Decimal]
+    penalty_due_rw: Optional[dict]  # Deve essere un dizionario per contenere sanzione e interessi
     total_gain_margin: Optional[Decimal]
+    penalty_due_cg: Optional[dict]  # Anche questo dovrebbe essere un dizionario
 
 class YearlyReportRecord(TypedDict):
     assets: Dict[AssetSymbol, YearlyReportAsset]
@@ -912,7 +914,18 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             scadenza = date(year, 6, 30)  # Data di scadenza impostata al 30 giugno
 
             # Calcola la sanzione utilizzando la data di scadenza corretta
-            penalty_due_rw = self.calcola_sanzione_annuale(total_value_in_fiat, data_scadenza=scadenza)
+            penalty_due_rw = self.calcola_sanzione_annuale(valore_attivita_estere=total_value_in_fiat, data_scadenza=scadenza)
+
+            if total_gain_margin is None:
+                # Se total_gain_margin è None, imposta penalty_base_value a 0
+                penalty_base_value = Decimal(0)
+            else:
+                penalty_base_value = total_gain_margin * Decimal('0.26')
+    
+            if config.debug:
+                print(f"Debug - Penalty Base Value for Calculation: {penalty_base_value}")
+
+            penalty_due_cg = self.calcola_sanzione_annuale(imposta_dovuta=penalty_base_value, data_scadenza=scadenza)
         
             # Save the total amount in the report
             yearly_holdings_report[year] = YearlyReportRecord(
@@ -920,8 +933,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 totals=YearlyReportTotal(
                     total_value_in_fiat_start_of_year=total_value_in_fiat_start_of_year,
                     total_value_in_fiat_at_end_of_year=total_value_in_fiat,
-                    penalty_due_rw=penalty_due_rw
-                    total_gain_margin=total_gain_margin
+                    penalty_due_rw=penalty_due_rw,
+                    total_gain_margin=total_gain_margin,
+                    penalty_due_cg = penalty_due_cg
                 )
             )
 
@@ -1148,19 +1162,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             print(f"Average BTC (Crypto Only): {average_btc_crypto_only}, Average EUR (Crypto Only): {average_eur_crypto_only}")
 
         print(f"Giacenza media calcolata per l'anno fiscale {tax_year}: {average_btc} BTC, {average_eur} EUR")
-
-    def calculate_penalty_due(self) -> None:
-        if self.total_gain_margin is None:
-            # Se total_gain_margin è None, imposta penalty_base_value a 0
-            penalty_base_value = Decimal(0)
-        else:
-            penalty_base_value = self.total_gain_margin * Decimal('0.26')
-    
-        if config.debug:
-            print(f"Debug - Penalty Base Value for Calculation: {penalty_base_value}")
-
-        scadenza = date(datetime.now().year, 6, 30)  # Data di scadenza standard
-        self.penalty_due_cg = self.calcola_sanzione_annuale(imposta_dovuta=penalty_base_value, data_scadenza=scadenza)
 
     def calcola_sanzione_annuale(
         imposta_dovuta: Optional[Decimal] = None,

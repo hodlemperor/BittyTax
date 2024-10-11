@@ -46,27 +46,26 @@
 <h2 style="text-align: center;">{{ config.format_tax_year(tax_year) }}</h2>
 
 <h3>Capital Gain</h3>
-
 <table repeat="1" width="100%" class="asset-table">
     <tr>
         <th align="left">Proceeds</th>
         <th align="left">Cost Basis</th>
         <th align="right">Gain or (Loss)</th>
         <th align="right">Tax (26%)</th>
-        <th align="right">Penalty Due</th> <!-- Nuova colonna per la sanzione -->
+        <th align="right">Penalty Due</th>
     </tr>
     <tr>
-        <td align="left">{{ cgains.total_proceeds|valuefilter }}</td>
-        <td align="left">{{ cgains.total_cost|valuefilter }}</td>
+        <td align="left">{{ cgains.total_proceeds | valuefilter }}</td>
+        <td align="left">{{ cgains.total_cost | valuefilter }}</td>
 
-        {% if cgains.total_gain_margin >= 0 %}
-        <td align="right">{{ total_gain_margin|valuefilter }}</td>
+        {% if yearly_holdings_report[tax_year].totals.total_gain_margin >= 0 %}
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.total_gain_margin | valuefilter }}</td>
         {% else %}
-        <td align="right" class="red-font">{{ total_gain_margin|valuefilter }}</td>
+        <td align="right" class="red-font">{{ yearly_holdings_report[tax_year].totals.total_gain_margin | valuefilter }}</td>
         {% endif %}
 
-        <td align="right">{{ (total_gain_margin * decimal.Decimal('0.26'))|valuefilter }}</td>
-        <td align="right">{{ cgains.penalty_due_cg.totale | default(0) | valuefilter }}</td> <!-- Mostra la sanzione -->
+        <td align="right">{{ (yearly_holdings_report[tax_year].totals.total_gain_margin * decimal.Decimal('0.26')) | valuefilter }}</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_cg.totale | default(0) | valuefilter }}</td>
     </tr>
 </table>
 
@@ -180,9 +179,9 @@
     </tr>
     <tr>
         <td align="left">Capital Gain Non Dichiarato</td>
-        <td align="right">{{ cgains.penalty_due_cg.sanzione | default(0) | valuefilter }}</td>
-        <td align="right">{{ cgains.penalty_due_cg.interessi_di_mora | default(0) | valuefilter }}</td>
-        <td align="right">{{ cgains.penalty_due_cg.totale | default(0) | valuefilter }}</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_cg.sanzione | default(0) | valuefilter }}</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_cg.interessi_di_mora | default(0) | valuefilter }}</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_cg.totale | default(0) | valuefilter }}</td>
     </tr>
     <tr>
         <td align="left">Detenzione all'Estero Non Dichiarata (Quadro RW)</td>
