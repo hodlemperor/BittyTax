@@ -336,12 +336,14 @@ def _do_each_tax_year(
         margin_gains = calc_margin_trading.totals['gains']
         margin_losses = calc_margin_trading.totals['losses']
         tax.total_gain_margin = total_gain + margin_gains - margin_losses
+        tax.calculate_penalty_due()
 
         tax.tax_report[tax_year] = {
             "CapitalGains": calc_cgt,
             "Income": calc_income,
             "MarginTrading": calc_margin_trading,
-            "TotalGainMargin": tax.total_gain_margin,  # Salva anche nel report
+            "TotalGainMargin": tax.total_gain_margin,
+            "PenaltyDue": tax.penalty_due_cg,
         }
 
         if not summary_only:
@@ -364,12 +366,14 @@ def _do_each_tax_year(
                 margin_gains = calc_margin_trading.totals['gains']
                 margin_losses = calc_margin_trading.totals['losses']
                 tax.total_gain_margin = total_gain + margin_gains - margin_losses
+                tax.calculate_penalty_due()
 
                 tax.tax_report[year] = {
                     "CapitalGains": calc_cgt,
                     "Income": calc_income,
                     "MarginTrading": calc_margin_trading,
-                    "TotalGainMargin": tax.total_gain_margin,  # Salva anche nel report
+                    "TotalGainMargin": tax.total_gain_margin,
+                    "PenaltyDue": tax.penalty_due_cg,
                 }
 
             else:
