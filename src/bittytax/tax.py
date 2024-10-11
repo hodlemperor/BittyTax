@@ -1308,7 +1308,6 @@ class CalculateCapitalGains:
         # Usa i totali del margine per aggiornare il guadagno totale
         self.total_gain_margin = self.total_gain + margin_totals["gains"] - margin_totals["losses"]
 
-
     def get_proceeds_limit(self, tax_year: Year) -> Decimal:
         if "proceeds_limit" in self.CG_DATA_INDIVIDUAL[tax_year]:
             # For 2023 HMRC has introduced a fixed CGT reporting proceeds limit
