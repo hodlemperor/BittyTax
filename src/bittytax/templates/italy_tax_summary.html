@@ -1,4 +1,38 @@
 <h1>Tax Summary (Italy)</h1>
+
+<!-- Sezione di spiegazione aggiunta all'inizio -->
+<p>Questo report fornisce un riepilogo delle imposte dovute e delle sanzioni applicabili per omessa dichiarazione dei capital gain e della detenzione di attività all'estero.</p>
+
+<h2>Calcolo delle Sanzioni</h2>
+<p>In caso di omessa dichiarazione delle plusvalenze o della detenzione di attività all'estero (Quadro RW), sono previste sanzioni. Le sanzioni vengono calcolate come segue:</p>
+<ul>
+    <li><strong>Capital Gain Non Dichiarato:</strong> Se non viene dichiarato il capital gain, la sanzione di base è pari al 30% dell'imposta dovuta. Tuttavia, sono previste riduzioni in base al ritardo, applicabili secondo il ravvedimento operoso.</li>
+    <li><strong>Detenzione all'Estero Non Dichiarata (Quadro RW):</strong> La sanzione è calcolata al 3% del valore di fine anno per paesi cooperanti, o al 6% per paesi non cooperanti. Anche in questo caso, sono previste riduzioni in base al ritardo.</li>
+</ul>
+<p>Il ritardo è calcolato automaticamente rispetto alla data di scadenza del 30 giugno dell'anno successivo. Le riduzioni applicabili sono:</p>
+<ul>
+    <li>1 giorno di ritardo: 0,1% della sanzione</li>
+    <li>2 giorni di ritardo: 0,2% della sanzione</li>
+    <li>3 giorni di ritardo: 0,3% della sanzione</li>
+    <li>4 giorni di ritardo: 0,4% della sanzione</li>
+    <li>5 giorni di ritardo: 0,5% della sanzione</li>
+    <li>6 giorni di ritardo: 0,6% della sanzione</li>
+    <li>7 giorni di ritardo: 0,7% della sanzione</li>
+    <li>8 giorni di ritardo: 0,8% della sanzione</li>
+    <li>9 giorni di ritardo: 0,9% della sanzione</li>
+    <li>10 giorni di ritardo: 1% della sanzione</li>
+    <li>11 giorni di ritardo: 1,1% della sanzione</li>
+    <li>12 giorni di ritardo: 1,2% della sanzione</li>
+    <li>13 giorni di ritardo: 1,3% della sanzione</li>
+    <li>14 giorni di ritardo: 1,4% della sanzione</li>
+    <li>Da 15 a 30 giorni di ritardo: 1,5% della sanzione</li>
+    <li>Da 31 a 90 giorni di ritardo: 1,67% della sanzione</li>
+    <li>Da 91 a 365 giorni di ritardo: 3,75% della sanzione</li>
+    <li>Da 366 a 730 giorni di ritardo: 4,29% della sanzione</li>
+    <li>Oltre 2 anni di ritardo: 5% della sanzione</li>
+</ul>
+<p>Le percentuali indicate sono applicate in automatico in base al numero di giorni di ritardo, calcolati rispetto alla data odierna.</p>
+
 {% for tax_year in tax_report|sort %}
     {% if tax_year in yearly_holdings_report %}
         {% set cgains = tax_report[tax_year]['CapitalGains'] %}
