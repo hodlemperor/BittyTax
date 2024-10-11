@@ -1137,7 +1137,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         print(f"Giacenza media calcolata per l'anno fiscale {tax_year}: {average_btc} BTC, {average_eur} EUR")
 
-    def calculate_total_gain_with_margin(self, calc_cgt: CalculateCapitalGains, tax_year: Year) -> Decimal:
+    def calculate_total_gain_with_margin(self, calc_cgt: TaxEventCapitalGains, tax_year: Year) -> Decimal:
         # Calcola i guadagni e le perdite del margin trading
         calc_margin = self.calculate_margin_trading(tax_year)
     
