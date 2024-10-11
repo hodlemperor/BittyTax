@@ -1297,14 +1297,17 @@ class CalculateCapitalGains:
         self.total_gain_margin = Decimal(0)
         self.penalty_due = Decimal(0)  # Nuovo attributo per la sanzione
 
-    def update_totals(self, margin_totals: MarginReportTotal) -> None:
+    def update_totals(self, margin_totals: Optional[MarginReportTotal] = None) -> None:
+        if margin_totals is None:
+            margin_totals = {"gains": Decimal(0), "losses": Decimal(0), "fees": Decimal(0)}
         # Calcola i totali combinati da short_term_totals e long_term_totals
         self.total_proceeds = self.short_term_totals["proceeds"] + self.long_term_totals["proceeds"]
         self.total_cost = self.short_term_totals["cost"] + self.long_term_totals["cost"]
         self.total_gain = self.short_term_totals["gain"] + self.long_term_totals["gain"]
-        
+
         # Usa i totali del margine per aggiornare il guadagno totale
         self.total_gain_margin = self.total_gain + margin_totals["gains"] - margin_totals["losses"]
+
 
     def get_proceeds_limit(self, tax_year: Year) -> Decimal:
         if "proceeds_limit" in self.CG_DATA_INDIVIDUAL[tax_year]:
