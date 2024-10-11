@@ -1330,6 +1330,7 @@ class CalculateCapitalGains:
         self.total_proceeds = Decimal(0)
         self.total_cost = Decimal(0)
         self.total_gain = Decimal(0)
+        self.total_gain_margin = None
 
     def get_proceeds_limit(self, tax_year: Year) -> Decimal:
         if "proceeds_limit" in self.CG_DATA_INDIVIDUAL[tax_year]:
