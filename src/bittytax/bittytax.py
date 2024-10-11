@@ -328,8 +328,6 @@ def _do_each_tax_year(
         print(f"{Fore.CYAN}calculating tax year {config.format_tax_year(tax_year)}")
 
         calc_cgt = tax.calculate_capital_gains(tax_year)
-        # Calcola il total_gain_margin per l'anno fiscale corrente
-        total_gain_margin = tax.calculate_total_gain_with_margin(calc_cgt, tax_year)
         calc_income = tax.calculate_income(tax_year)
         calc_margin_trading = tax.calculate_margin_trading(tax_year)
         tax.tax_report[tax_year] = {
@@ -350,7 +348,6 @@ def _do_each_tax_year(
 
             if year in CCG.CG_DATA_INDIVIDUAL:
                 calc_cgt = tax.calculate_capital_gains(year)
-                total_gain_margin = tax.calculate_total_gain_with_margin(calc_cgt, tax_year)
                 calc_income = tax.calculate_income(year)
                 calc_margin_trading = tax.calculate_margin_trading(year)
                 tax.tax_report[year] = {
