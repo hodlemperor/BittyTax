@@ -1295,7 +1295,7 @@ class CalculateCapitalGains:
         self.total_cost = Decimal(0)
         self.total_gain = Decimal(0)
         self.total_gain_margin = Decimal(0)
-        self.penalty_due_cg = Decimal(0)
+        self.penalty_due_cg = {} 
 
     def update_totals(self, margin_totals: Optional[MarginReportTotal] = None) -> None:
         if margin_totals is None:
