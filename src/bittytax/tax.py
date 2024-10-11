@@ -6,7 +6,7 @@ import copy
 import itertools
 import sys
 from dataclasses import dataclass, field
-from decimal import Decimal, getcontext
+from decimal import Decimal
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import requests
@@ -1509,9 +1509,6 @@ class CalculateMarginTrading:
             f'losses={config.sym()}{self.contract_totals[(wallet, note)]["losses"]} '
             f'fess={config.sym()}{self.contract_totals[(wallet, note)]["fees"]} '
         )
-
-# Imposta la precisione dei decimali
-getcontext().prec = 6
 
 # Tassi di interesse per anno
 tassi_interessi = {
