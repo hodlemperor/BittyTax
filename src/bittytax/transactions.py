@@ -37,22 +37,22 @@ class TransactionHistory:
 
             self.get_all_values(tr)
 
-        # All'interno del costruttore di TransactionHistory, nella sezione del controllo sulle transazioni TRADE
-        if tr.t_type == TrType.TRADE and tr.buy and tr.sell:
-            if tr.sell.asset not in config.fiat_list and tr.buy.asset not in config.fiat_list:
-                if tr.sell.asset not in config.stablecoin_list and tr.buy.asset not in config.stablecoin_list:
-                    transaction_year = tr.buy.timestamp.year
-                    if transaction_year <= 2022:
-                        is_crypto2crypto_taxable = True  # Sempre tassabile fino al 2022
-                    else:
-                        is_crypto2crypto_taxable = config.is_crypto2crypto_taxable  # Dipende dalla configurazione per gli anni successivi
+            # All'interno del costruttore di TransactionHistory, nella sezione del controllo sulle transazioni TRADE
+            if tr.t_type == TrType.TRADE and tr.buy and tr.sell:
+                if tr.sell.asset not in config.fiat_list and tr.buy.asset not in config.fiat_list:
+                    if tr.sell.asset not in config.stablecoin_list and tr.buy.asset not in config.stablecoin_list:
+                        transaction_year = tr.buy.timestamp.year
+                        if transaction_year <= 2022:
+                            is_crypto2crypto_taxable = True  # Sempre tassabile fino al 2022
+                        else:
+                            is_crypto2crypto_taxable = config.is_crypto2crypto_taxable  # Dipende dalla configurazione per gli anni successivi
 
-                    if not is_crypto2crypto_taxable:
-                        tr.t_type = TrType.CRYPTO_CRYPTO
-                        if tr.buy:
-                            tr.buy.t_type = TrType.CRYPTO_CRYPTO
-                        if tr.sell:
-                            tr.sell.t_type = TrType.CRYPTO_CRYPTO
+                        if not is_crypto2crypto_taxable:
+                            tr.t_type = TrType.CRYPTO_CRYPTO
+                            if tr.buy:
+                                tr.buy.t_type = TrType.CRYPTO_CRYPTO
+                            if tr.sell:
+                                tr.sell.t_type = TrType.CRYPTO_CRYPTO
 
             # The fee value (trading fee) as an allowable cost to the buy, the sell or both
             if tr.fee and tr.fee.disposal and tr.fee.proceeds:
