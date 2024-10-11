@@ -27,7 +27,7 @@
         {% endif %}
         
         <td align="right">{{ (cgains.total_gain_margin * decimal.Decimal('0.26'))|valuefilter }}</td>
-        <td align="right">{{ cgains.penalty_due|valuefilter }}</td> <!-- Mostra la sanzione -->
+        <td align="right">{{ cgains.penalty_due_cg|valuefilter }}</td> <!-- Mostra la sanzione -->
     </tr>
 </table>
 
@@ -131,9 +131,22 @@
     </tr>
 </table>
 
-<div>
-    <strong>Notice:</strong> Table include all FIAT and Crypto holdings anywhere.
-</div>
+<h3>Sanzioni</h3>
+<table width="100%" class="penalty-table">
+    <tr>
+        <th align="left">Tipo di Sanzione</th>
+        <th align="right">Importo</th>
+    </tr>
+    <tr>
+        <td align="left">Capital Gain Non Dichiarato</td>
+        <td align="right">{{ cgains.penalty_due_cg | valuefilter }}</td>
+    </tr>
+    <tr>
+        <td align="left">Detenzione all'Estero Non Dichiarata (Quadro RW)</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw | valuefilter }}</td>
+    </tr>
+</table>
+
     {% endif %}
 {% endfor %}
 

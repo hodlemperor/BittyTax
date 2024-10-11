@@ -891,10 +891,10 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     )
 
             # Calcola la sanzione per il valore finale in EUR dell'anno
-            penalty_due = calcola_sanzioni_annuali(
+            penalty_due_rw = calcola_sanzioni_annuali(
                 total_value_in_fiat,
-                paese_cooperante=True,  # Modifica se necessario
-                giorni_ritardo=None  # Aggiungi i giorni di ritardo se applicabile
+                tipo_sanzione='detenzione_all_estero',
+                paese_cooperante=True,
             )
         
             # Save the total amount in the report
@@ -903,7 +903,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 totals=YearlyReportTotal(
                     total_value_in_fiat_start_of_year=total_value_in_fiat_start_of_year,
                     total_value_in_fiat_at_end_of_year=total_value_in_fiat,
-                    penalty_due=penalty_due
+                    penalty_due=penalty_due_rw
                 )
             )
 
@@ -1361,7 +1361,7 @@ class CalculateCapitalGains:
         paese_cooperante = True  # Assume che il paese sia cooperante, modifica se necessario
         
         # Usa la funzione già esistente per calcolare la sanzione
-        self.penalty_due = self.calcola_sanzioni_annuali(average_eur_value, paese_cooperante, giorni_ritardo)
+        self.penalty_due_cg = self.calcola_sanzioni_annuali(average_eur_value, tipo_sanzione='detenzione_all_estero', paese_cooperante=True)
 
     def non_tax_summary(self, te: TaxEventNoGainNoLoss) -> None:
         if te.t_type.value not in self.non_tax_by_type:
@@ -1514,27 +1514,48 @@ class CalculateMarginTrading:
             f'fess={config.sym()}{self.contract_totals[(wallet, note)]["fees"]} '
         )
 
-def calcola_sanzioni_annuali(average_eur_value: Decimal, paese_cooperante: bool = True, giorni_ritardo: Optional[int] = None) -> Decimal:
+def calcola_sanzioni_annuali(
+    average_eur_value: Decimal,
+    tipo_sanzione: str,
+    paese_cooperante: bool = True,
+    data_scadenza: Optional[date] = None
+) -> Decimal:
     """
-    Calcola la sanzione annuale per omessa dichiarazione.
+    Calcola la sanzione annuale per omessa dichiarazione con calcolo automatico dei giorni di ritardo.
     
     :param average_eur_value: Il valore medio annuale del conto in EUR
+    :param tipo_sanzione: Tipo di sanzione ('capital_gain' o 'detenzione_all_estero')
     :param paese_cooperante: True se il paese è cooperante, False altrimenti
-    :param giorni_ritardo: Numero di giorni di ritardo per il ravvedimento operoso, None se non applicabile
+    :param data_scadenza: Data di scadenza della dichiarazione (default 30 giugno)
     :return: L'importo della sanzione annuale, con o senza riduzione
     """
-    # Determina l'aliquota di base in base al paese
-    sanzione_base = average_eur_value * (Decimal('0.03') if paese_cooperante else Decimal('0.06'))
-
-    # Applica riduzione in base ai giorni di ritardo (ravvedimento operoso)
-    if giorni_ritardo is not None:
-        if giorni_ritardo <= 90:
-            sanzione_base /= Decimal('9')  # Riduzione a 1/9
-        elif giorni_ritardo <= 365:
-            sanzione_base /= Decimal('8')  # Riduzione a 1/8
-        elif giorni_ritardo <= 730:
-            sanzione_base /= Decimal('7')  # Riduzione a 1/7
+    # Determina l'aliquota di base in base al tipo di sanzione e paese
+    if tipo_sanzione == 'capital_gain':
+        sanzione_base = average_eur_value * Decimal('0.30')  # 30% per il capital gain non dichiarato
+    elif tipo_sanzione == 'detenzione_all_estero':
+        if paese_cooperante:
+            sanzione_base = average_eur_value * Decimal('0.03')  # 3% per paesi cooperanti
         else:
-            sanzione_base /= Decimal('6')  # Riduzione a 1/6
+            sanzione_base = average_eur_value * Decimal('0.06')  # 6% per paesi non cooperanti
+
+    # Calcolo dei giorni di ritardo rispetto alla data di scadenza
+    if data_scadenza is None:
+        data_scadenza = date(datetime.now().year, 6, 30)  # Imposta come default il 30 giugno
+    giorni_ritardo = (datetime.now().date() - data_scadenza).days
+    giorni_ritardo = max(giorni_ritardo, 0)  # Evita valori negativi se in anticipo
+
+    # Applica riduzione per il ravvedimento operoso in base ai giorni di ritardo
+    if giorni_ritardo <= 14:
+        sanzione_base *= Decimal('1') / Decimal('15')
+    elif giorni_ritardo <= 30:
+        sanzione_base *= Decimal('1') / Decimal('10')
+    elif giorni_ritardo <= 90:
+        sanzione_base *= Decimal('1') / Decimal('9')
+    elif giorni_ritardo <= 365:
+        sanzione_base *= Decimal('1') / Decimal('8')
+    elif giorni_ritardo <= 730:
+        sanzione_base *= Decimal('1') / Decimal('7')
+    else:
+        sanzione_base *= Decimal('1') / Decimal('6')
 
     return sanzione_base
