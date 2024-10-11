@@ -1307,6 +1307,8 @@ class CalculateCapitalGains:
 
         # Usa i totali del margine per aggiornare il guadagno totale
         self.total_gain_margin = self.total_gain + margin_totals["gains"] - margin_totals["losses"]
+        if self.total_gain_margin is None:
+            self.total_gain_margin = Decimal(0)
 
     def get_proceeds_limit(self, tax_year: Year) -> Decimal:
         if "proceeds_limit" in self.CG_DATA_INDIVIDUAL[tax_year]:
