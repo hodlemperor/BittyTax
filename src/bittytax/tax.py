@@ -1375,8 +1375,14 @@ class CalculateCapitalGains:
 
     def calculate_penalty_due(self) -> None:
         average_eur_value = self.total_gain_margin * Decimal('0.26')
-        scadenza = date(datetime.now().year, 6, 30)  # Modifica per ottenere la scadenza corretta
+        if average_eur_value is None:
+            average_eur_value = Decimal(0)
+
+        print(f"Debug - Average EUR Value for Penalty: {average_eur_value}")
+
+        scadenza = date(datetime.now().year, 6, 30)  # Data di scadenza standard
         self.penalty_due_cg = calcola_sanzione_annuale(imposta_dovuta=average_eur_value, data_scadenza=scadenza)
+
 
     def non_tax_summary(self, te: TaxEventNoGainNoLoss) -> None:
         if te.t_type.value not in self.non_tax_by_type:
