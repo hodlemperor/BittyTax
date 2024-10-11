@@ -1300,15 +1300,30 @@ class CalculateCapitalGains:
     def update_totals(self, margin_totals: Optional[MarginReportTotal] = None) -> None:
         if margin_totals is None:
             margin_totals = {"gains": Decimal(0), "losses": Decimal(0), "fees": Decimal(0)}
+
+        # Debug: Stampa i valori di margin_totals
+        print(f"Debug - Margin Totals: {margin_totals}")
+
         # Calcola i totali combinati da short_term_totals e long_term_totals
         self.total_proceeds = self.short_term_totals["proceeds"] + self.long_term_totals["proceeds"]
         self.total_cost = self.short_term_totals["cost"] + self.long_term_totals["cost"]
         self.total_gain = self.short_term_totals["gain"] + self.long_term_totals["gain"]
 
+        # Debug: Stampa i valori intermedi
+        print(f"Debug - Total Proceeds: {self.total_proceeds}")
+        print(f"Debug - Total Cost: {self.total_cost}")
+        print(f"Debug - Total Gain: {self.total_gain}")
+
         # Usa i totali del margine per aggiornare il guadagno totale
         self.total_gain_margin = self.total_gain + margin_totals["gains"] - margin_totals["losses"]
+
+        # Debug: Controlla se total_gain_margin è None
         if self.total_gain_margin is None:
+            print("Debug - Total Gain Margin is None, setting to Decimal(0)")
             self.total_gain_margin = Decimal(0)
+        else:
+            print(f"Debug - Total Gain Margin: {self.total_gain_margin}")
+
 
     def get_proceeds_limit(self, tax_year: Year) -> Decimal:
         if "proceeds_limit" in self.CG_DATA_INDIVIDUAL[tax_year]:
