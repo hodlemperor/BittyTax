@@ -42,6 +42,18 @@ from .transactions import Buy, Sell
 
 PRECISION = Decimal("0.00")
 
+# Tassi di interesse per anno
+tassi_interessi = {
+    (2016, 2016): Decimal('0.002'),
+    (2017, 2017): Decimal('0.001'),
+    (2018, 2018): Decimal('0.003'),
+    (2019, 2019): Decimal('0.008'),
+    (2020, 2020): Decimal('0.0005'),
+    (2021, 2021): Decimal('0.0001'),
+    (2022, 2022): Decimal('0.0125'),
+    (2023, 2023): Decimal('0.05'),
+    (2024, 9999): Decimal('0.025')  # Per il 2024 e oltre
+}
 
 class TaxReportRecord(TypedDict):  # pylint: disable=too-few-public-methods
     CapitalGains: "CalculateCapitalGains"
@@ -78,6 +90,7 @@ class YearlyReportAsset(TypedDict):
 class YearlyReportTotal(TypedDict):
     total_value_in_fiat_at_end_of_year: Decimal
     penalty_due_rw: Optional[Decimal]
+    total_gain_margin: Optional[Decimal]
 
 class YearlyReportRecord(TypedDict):
     assets: Dict[AssetSymbol, YearlyReportAsset]
@@ -889,11 +902,17 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         value_in_fiat_at_end_of_year=value_in_fiat,
                         days_held=days_held
                     )
+
+            # Calcola total_gain_margin per l'anno corrente
+            total_gain_margin = self.calculate_total_gain_margin(year)
+            if config.debug:
+                print(f"Year {year}: Total Gain Margin = {total_gain_margin}")
+
             # Calcola la data di scadenza per l'anno fiscale
             scadenza = date(year, 6, 30)  # Data di scadenza impostata al 30 giugno
 
             # Calcola la sanzione utilizzando la data di scadenza corretta
-            penalty_due_rw = calcola_sanzione_annuale(total_value_in_fiat, data_scadenza=scadenza)
+            penalty_due_rw = self.calcola_sanzione_annuale(total_value_in_fiat, data_scadenza=scadenza)
         
             # Save the total amount in the report
             yearly_holdings_report[year] = YearlyReportRecord(
@@ -902,6 +921,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     total_value_in_fiat_start_of_year=total_value_in_fiat_start_of_year,
                     total_value_in_fiat_at_end_of_year=total_value_in_fiat,
                     penalty_due_rw=penalty_due_rw
+                    total_gain_margin=total_gain_margin
                 )
             )
 
@@ -1140,9 +1160,91 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             print(f"Debug - Penalty Base Value for Calculation: {penalty_base_value}")
 
         scadenza = date(datetime.now().year, 6, 30)  # Data di scadenza standard
-        self.penalty_due_cg = calcola_sanzione_annuale(imposta_dovuta=penalty_base_value, data_scadenza=scadenza)
+        self.penalty_due_cg = self.calcola_sanzione_annuale(imposta_dovuta=penalty_base_value, data_scadenza=scadenza)
 
+    def calcola_sanzione_annuale(
+        imposta_dovuta: Optional[Decimal] = None,
+        valore_attivita_estere: Optional[Decimal] = None,
+        data_scadenza: Optional[date] = None,
+        paese_black_list: bool = False
+    ) -> dict:
+        """
+        Calcola sia la sanzione che gli interessi di mora in base all'anno.
 
+        :param imposta_dovuta: L'importo dell'imposta sui capital gains non versata (opzionale)
+        :param valore_attivita_estere: Il valore delle attività estere non dichiarate nel quadro RW (opzionale)
+        :param data_scadenza: La data di scadenza per il pagamento
+        :param paese_black_list: True se le attività sono in paesi black list, False altrimenti
+        :return: Un dizionario con la sanzione e gli interessi di mora calcolati
+        """
+        if (imposta_dovuta is None and valore_attivita_estere is None) or \
+           (imposta_dovuta is not None and valore_attivita_estere is not None):
+            raise ValueError("Devi fornire o 'imposta_dovuta' o 'valore_attivita_estere', ma non entrambi")
+
+        if data_scadenza is None:
+            data_scadenza = date(datetime.now().year, 6, 30)
+
+        giorni_ritardo = (datetime.now().date() - data_scadenza).days
+        giorni_ritardo = max(giorni_ritardo, 0)
+
+        sanzione = Decimal('0')
+        if imposta_dovuta is not None:
+            sanzione_base = imposta_dovuta * Decimal('0.30')
+            if giorni_ritardo <= 14:
+                sanzione = imposta_dovuta * Decimal('0.001') * giorni_ritardo
+            elif giorni_ritardo <= 30:
+                sanzione = sanzione_base * (Decimal('1') / Decimal('10'))
+            elif giorni_ritardo <= 90:
+                sanzione = sanzione_base * (Decimal('1') / Decimal('9'))
+            elif giorni_ritardo <= 365:
+                sanzione = sanzione_base * (Decimal('1') / Decimal('8'))
+            elif giorni_ritardo <= 730:
+                sanzione = sanzione_base * (Decimal('1') / Decimal('7'))
+            else:
+                sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
+    
+        elif valore_attivita_estere is not None:
+            percentuale_sanzione = Decimal('0.06') if paese_black_list else Decimal('0.03')
+            sanzione_base = valore_attivita_estere * percentuale_sanzione
+            if giorni_ritardo <= 90:
+                sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
+            elif giorni_ritardo <= 365:
+                sanzione = sanzione_base * (Decimal('1') / Decimal('5'))
+            elif giorni_ritardo <= 730:
+                sanzione = sanzione_base * (Decimal('1') / Decimal('4'))
+            else:
+                sanzione = sanzione_base * (Decimal('1') / Decimal('3'))
+
+        interessi = Decimal('0')
+        anno_corrente = datetime.now().year
+        for (anno_inizio, anno_fine), tasso in tassi_interessi.items():
+            if anno_inizio <= anno_corrente <= anno_fine:
+                interessi += (imposta_dovuta or valore_attivita_estere) * tasso
+
+        totale = sanzione + interessi
+
+        return {
+            'sanzione': sanzione.quantize(Decimal('0.01')),
+            'interessi_di_mora': interessi.quantize(Decimal('0.01')),
+            'totale': totale.quantize(Decimal('0.01'))
+        }
+
+    def calculate_total_gain_margin(self, tax_year: Year) -> Decimal:
+        # Istanzia i report per capital gains e margin trading
+        capital_gains_report = self.calculate_capital_gains(tax_year)
+        margin_trading_report = self.calculate_margin_trading(tax_year)
+
+        # Calcola total_gain_margin
+        total_gain_margin = (
+            capital_gains_report.summary["total_gain"] 
+            + margin_trading_report.totals["gains"] 
+            - margin_trading_report.totals["losses"]
+        )
+
+        if config.debug:
+            print(f"Total Gain Margin for {tax_year}: {total_gain_margin}")
+
+        return total_gain_margin
 
 class CalculateCapitalGains:
     # Rate changes start from 6th April in previous year, i.e. 2022 is for tax year 2021/22
@@ -1512,84 +1614,3 @@ class CalculateMarginTrading:
             f'fess={config.sym()}{self.contract_totals[(wallet, note)]["fees"]} '
             f'net_total={config.sym()}{self.totals["net_total"]} '
         )
-
-# Tassi di interesse per anno
-tassi_interessi = {
-    (2016, 2016): Decimal('0.002'),
-    (2017, 2017): Decimal('0.001'),
-    (2018, 2018): Decimal('0.003'),
-    (2019, 2019): Decimal('0.008'),
-    (2020, 2020): Decimal('0.0005'),
-    (2021, 2021): Decimal('0.0001'),
-    (2022, 2022): Decimal('0.0125'),
-    (2023, 2023): Decimal('0.05'),
-    (2024, 9999): Decimal('0.025')  # Per il 2024 e oltre
-}
-
-
-def calcola_sanzione_annuale(
-    imposta_dovuta: Optional[Decimal] = None,
-    valore_attivita_estere: Optional[Decimal] = None,
-    data_scadenza: Optional[date] = None,
-    paese_black_list: bool = False
-) -> dict:
-    """
-    Calcola sia la sanzione che gli interessi di mora in base all'anno.
-
-    :param imposta_dovuta: L'importo dell'imposta sui capital gains non versata (opzionale)
-    :param valore_attivita_estere: Il valore delle attività estere non dichiarate nel quadro RW (opzionale)
-    :param data_scadenza: La data di scadenza per il pagamento
-    :param paese_black_list: True se le attività sono in paesi black list, False altrimenti
-    :return: Un dizionario con la sanzione e gli interessi di mora calcolati
-    """
-    if (imposta_dovuta is None and valore_attivita_estere is None) or \
-       (imposta_dovuta is not None and valore_attivita_estere is not None):
-        raise ValueError("Devi fornire o 'imposta_dovuta' o 'valore_attivita_estere', ma non entrambi")
-
-    if data_scadenza is None:
-        data_scadenza = date(datetime.now().year, 6, 30)
-
-    giorni_ritardo = (datetime.now().date() - data_scadenza).days
-    giorni_ritardo = max(giorni_ritardo, 0)
-
-    sanzione = Decimal('0')
-    if imposta_dovuta is not None:
-        sanzione_base = imposta_dovuta * Decimal('0.30')
-        if giorni_ritardo <= 14:
-            sanzione = imposta_dovuta * Decimal('0.001') * giorni_ritardo
-        elif giorni_ritardo <= 30:
-            sanzione = sanzione_base * (Decimal('1') / Decimal('10'))
-        elif giorni_ritardo <= 90:
-            sanzione = sanzione_base * (Decimal('1') / Decimal('9'))
-        elif giorni_ritardo <= 365:
-            sanzione = sanzione_base * (Decimal('1') / Decimal('8'))
-        elif giorni_ritardo <= 730:
-            sanzione = sanzione_base * (Decimal('1') / Decimal('7'))
-        else:
-            sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
-    
-    elif valore_attivita_estere is not None:
-        percentuale_sanzione = Decimal('0.06') if paese_black_list else Decimal('0.03')
-        sanzione_base = valore_attivita_estere * percentuale_sanzione
-        if giorni_ritardo <= 90:
-            sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
-        elif giorni_ritardo <= 365:
-            sanzione = sanzione_base * (Decimal('1') / Decimal('5'))
-        elif giorni_ritardo <= 730:
-            sanzione = sanzione_base * (Decimal('1') / Decimal('4'))
-        else:
-            sanzione = sanzione_base * (Decimal('1') / Decimal('3'))
-
-    interessi = Decimal('0')
-    anno_corrente = datetime.now().year
-    for (anno_inizio, anno_fine), tasso in tassi_interessi.items():
-        if anno_inizio <= anno_corrente <= anno_fine:
-            interessi += (imposta_dovuta or valore_attivita_estere) * tasso
-
-    totale = sanzione + interessi
-
-    return {
-        'sanzione': sanzione.quantize(Decimal('0.01')),
-        'interessi_di_mora': interessi.quantize(Decimal('0.01')),
-        'totale': totale.quantize(Decimal('0.01'))
-    }
