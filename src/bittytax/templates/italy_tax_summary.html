@@ -2,7 +2,7 @@
 
 <p>
     <strong>Calcolo delle Sanzioni:</strong><br>
-    La sanzione per il mancato versamento delle imposte sui capital gains è calcolata sul 30% dell'imposta dovuta, con riduzioni in base ai giorni di ritardo: 
+    La sanzione per il mancato versamento delle imposte sui capital gains è calcolata sul 30% dell'imposta dovuta, con riduzioni in base ai giorni di ritardo:
     <ul>
         <li>0,1% per giorno fino a 14 giorni di ritardo</li>
         <li>1/10 del 30% fino a 30 giorni</li>
@@ -17,6 +17,23 @@
         <li>1/5 fino a 1 anno (365 giorni)</li>
         <li>1/4 fino a 2 anni (730 giorni)</li>
         <li>1/3 oltre 2 anni</li>
+    </ul>
+    <ul>
+        <li>
+            <strong>Interessi di Mora:</strong><br>
+            Gli interessi di mora si applicano in base all'anno e sono cumulativi. Le percentuali per ciascun anno sono:
+            <ul>
+                <li>0,2% (dal 01/01/2016 al 31/12/2016)</li>
+                <li>0,1% (dal 01/01/2017 al 31/12/2017)</li>
+                <li>0,3% (dal 01/01/2018 al 31/12/2018)</li>
+                <li>0,8% (dal 01/01/2019 al 31/12/2019)</li>
+                <li>0,05% (dal 01/01/2020 al 31/12/2020)</li>
+                <li>0,01% (dal 01/01/2021 al 31/12/2021)</li>
+                <li>1,25% (dal 01/01/2022 al 31/12/2022)</li>
+                <li>5% (dal 01/01/2023 al 31/12/2023)</li>
+                <li>2,5% (dal 01/01/2024)</li>
+            </ul>
+        </li>
     </ul>
 </p>
 
@@ -41,13 +58,13 @@
     <tr>
         <td align="left">{{ cgains.total_proceeds|valuefilter }}</td>
         <td align="left">{{ cgains.total_cost|valuefilter }}</td>
-        
+
         {% if cgains.total_gain_margin >= 0 %}
-            <td align="right">{{ cgains.total_gain_margin|valuefilter }}</td>
+        <td align="right">{{ cgains.total_gain_margin|valuefilter }}</td>
         {% else %}
-            <td align="right" class="red-font">{{ cgains.total_gain_margin|valuefilter }}</td>
+        <td align="right" class="red-font">{{ cgains.total_gain_margin|valuefilter }}</td>
         {% endif %}
-        
+
         <td align="right">{{ (cgains.total_gain_margin * decimal.Decimal('0.26'))|valuefilter }}</td>
         <td align="right">{{ cgains.penalty_due_cg|valuefilter }}</td> <!-- Mostra la sanzione -->
     </tr>
@@ -88,9 +105,9 @@
             <th align="right">Qty Start</th>
             <th align="right">
                 {% if tax_year == current_year %}
-                    Qty End {{ "today" | format_date("%d/%m") }}
+                Qty End {{ "today" | format_date("%d/%m") }}
                 {% else %}
-                    Qty End
+                Qty End
                 {% endif %}
             </th>
             <th align="right">Avg Bal</th>
@@ -98,9 +115,9 @@
             <th align="right">Val Start</th>
             <th align="right">
                 {% if tax_year == current_year %}
-                    Val End {{ "today" | format_date("%d/%m") }}
+                Val End {{ "today" | format_date("%d/%m") }}
                 {% else %}
-                    Val End
+                Val End
                 {% endif %}
             </th>
             {% if tax_year >= 2023 %}
@@ -158,16 +175,23 @@
     <tr>
         <th align="left">Tipo di Sanzione</th>
         <th align="right">Importo</th>
+        <th align="right">Interessi di Mora</th> <!-- Nuova colonna -->
+        <th align="right">Totale</th> <!-- Nuova colonna per il totale -->
     </tr>
     <tr>
         <td align="left">Capital Gain Non Dichiarato</td>
-        <td align="right">{{ cgains.penalty_due_cg | valuefilter }}</td>
+        <td align="right">{{ cgains.penalty_due_cg.sanzione | valuefilter }}</td>
+        <td align="right">{{ cgains.penalty_due_cg.interessi_di_mora | valuefilter }}</td>
+        <td align="right">{{ cgains.penalty_due_cg.totale | valuefilter }}</td>
     </tr>
     <tr>
         <td align="left">Detenzione all'Estero Non Dichiarata (Quadro RW)</td>
-        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw | valuefilter }}</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.sanzione | valuefilter }}</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.interessi_di_mora | valuefilter }}</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.totale | valuefilter }}</td>
     </tr>
 </table>
+
 
     {% endif %}
 {% endfor %}

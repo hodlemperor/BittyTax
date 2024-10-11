@@ -1513,85 +1513,83 @@ class CalculateMarginTrading:
 # Imposta la precisione dei decimali
 getcontext().prec = 6
 
+# Tassi di interesse per anno
+tassi_interessi = {
+    (2016, 2016): Decimal('0.002'),
+    (2017, 2017): Decimal('0.001'),
+    (2018, 2018): Decimal('0.003'),
+    (2019, 2019): Decimal('0.008'),
+    (2020, 2020): Decimal('0.0005'),
+    (2021, 2021): Decimal('0.0001'),
+    (2022, 2022): Decimal('0.0125'),
+    (2023, 2023): Decimal('0.05'),
+    (2024, 9999): Decimal('0.025')  # Per il 2024 e oltre
+}
+
+
 def calcola_sanzione_annuale(
     imposta_dovuta: Optional[Decimal] = None,
     valore_attivita_estere: Optional[Decimal] = None,
     data_scadenza: Optional[date] = None,
     paese_black_list: bool = False
-) -> Decimal:
+) -> dict:
     """
-    Calcola la sanzione per omesso versamento delle imposte sui capital gains
-    oppure per omessa dichiarazione del quadro RW, in base al parametro fornito.
+    Calcola sia la sanzione che gli interessi di mora in base all'anno.
 
     :param imposta_dovuta: L'importo dell'imposta sui capital gains non versata (opzionale)
     :param valore_attivita_estere: Il valore delle attività estere non dichiarate nel quadro RW (opzionale)
-    :param data_scadenza: La data di scadenza per il pagamento, default: 30 giugno dell'anno corrente
-    :param paese_black_list: True se le attività sono detenute in paesi black list, False altrimenti
-    :return: L'importo della sanzione calcolata
+    :param data_scadenza: La data di scadenza per il pagamento
+    :param paese_black_list: True se le attività sono in paesi black list, False altrimenti
+    :return: Un dizionario con la sanzione e gli interessi di mora calcolati
     """
-    # Verifica che uno e un solo parametro sia fornito
     if (imposta_dovuta is None and valore_attivita_estere is None) or \
        (imposta_dovuta is not None and valore_attivita_estere is not None):
         raise ValueError("Devi fornire o 'imposta_dovuta' o 'valore_attivita_estere', ma non entrambi")
 
-    # Imposta la data di scadenza di default al 30 giugno dell'anno corrente
     if data_scadenza is None:
         data_scadenza = date(datetime.now().year, 6, 30)
 
-    # Calcolo dei giorni di ritardo rispetto alla data di scadenza
     giorni_ritardo = (datetime.now().date() - data_scadenza).days
-    giorni_ritardo = max(giorni_ritardo, 0)  # Evita valori negativi se in anticipo
+    giorni_ritardo = max(giorni_ritardo, 0)
 
-    # **Calcolo della sanzione per omesso versamento delle imposte sui capital gains**
+    sanzione = Decimal('0')
     if imposta_dovuta is not None:
-        # Sanzione base: 30% dell'imposta dovuta
         sanzione_base = imposta_dovuta * Decimal('0.30')
-
-        # Determina la sanzione in base ai giorni di ritardo
         if giorni_ritardo <= 14:
-            # Sanzione ridotta a 0,1% per ogni giorno di ritardo
             sanzione = imposta_dovuta * Decimal('0.001') * giorni_ritardo
         elif giorni_ritardo <= 30:
-            # Riduzione a 1/10 del minimo
             sanzione = sanzione_base * (Decimal('1') / Decimal('10'))
         elif giorni_ritardo <= 90:
-            # Riduzione a 1/9 del minimo
             sanzione = sanzione_base * (Decimal('1') / Decimal('9'))
         elif giorni_ritardo <= 365:
-            # Riduzione a 1/8 del minimo
             sanzione = sanzione_base * (Decimal('1') / Decimal('8'))
         elif giorni_ritardo <= 730:
-            # Riduzione a 1/7 del minimo
             sanzione = sanzione_base * (Decimal('1') / Decimal('7'))
-        else:  # Oltre 2 anni
-            # Riduzione a 1/6 del minimo
-            sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
-
-        return sanzione.quantize(Decimal('0.01'))
-
-    # **Calcolo della sanzione per omessa dichiarazione del quadro RW**
-    elif valore_attivita_estere is not None:
-        # Determina la percentuale della sanzione base
-        if paese_black_list:
-            percentuale_sanzione = Decimal('0.06')  # 6% minimo per paesi black list
         else:
-            percentuale_sanzione = Decimal('0.03')  # 3% minimo per paesi white list
-
-        # Sanzione base
+            sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
+    
+    elif valore_attivita_estere is not None:
+        percentuale_sanzione = Decimal('0.06') if paese_black_list else Decimal('0.03')
         sanzione_base = valore_attivita_estere * percentuale_sanzione
-
-        # Determina la sanzione in base ai giorni di ritardo
         if giorni_ritardo <= 90:
-            # Riduzione a 1/6 del minimo
             sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
         elif giorni_ritardo <= 365:
-            # Riduzione a 1/5 del minimo
             sanzione = sanzione_base * (Decimal('1') / Decimal('5'))
         elif giorni_ritardo <= 730:
-            # Riduzione a 1/4 del minimo
             sanzione = sanzione_base * (Decimal('1') / Decimal('4'))
-        else:  # Oltre 2 anni
-            # Riduzione a 1/3 del minimo
+        else:
             sanzione = sanzione_base * (Decimal('1') / Decimal('3'))
 
-        return sanzione.quantize(Decimal('0.01'))
+    interessi = Decimal('0')
+    anno_corrente = datetime.now().year
+    for (anno_inizio, anno_fine), tasso in tassi_interessi.items():
+        if anno_inizio <= anno_corrente <= anno_fine:
+            interessi += (imposta_dovuta or valore_attivita_estere) * tasso
+
+    totale = sanzione + interessi
+
+    return {
+        'sanzione': sanzione.quantize(Decimal('0.01')),
+        'interessi_di_mora': interessi.quantize(Decimal('0.01')),
+        'totale': totale.quantize(Decimal('0.01'))
+    }
