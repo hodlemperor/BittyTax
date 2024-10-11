@@ -1178,9 +1178,13 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         :param paese_black_list: True se le attività sono in paesi black list, False altrimenti
         :return: Un dizionario con la sanzione e gli interessi di mora calcolati
         """
-        if (imposta_dovuta is None and valore_attivita_estere is None) or \
-           (imposta_dovuta is not None and valore_attivita_estere is not None):
-            raise ValueError("Devi fornire o 'imposta_dovuta' o 'valore_attivita_estere', ma non entrambi")
+        # Se entrambi sono None, restituisci zero per tutti i valori
+        if imposta_dovuta is None and valore_attivita_estere is None:
+            return {
+                'sanzione': Decimal('0.00'),
+                'interessi_di_mora': Decimal('0.00'),
+                'totale': Decimal('0.00')
+            }
 
         if data_scadenza is None:
             data_scadenza = date(datetime.now().year, 6, 30)
@@ -1203,7 +1207,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 sanzione = sanzione_base * (Decimal('1') / Decimal('7'))
             else:
                 sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
-    
+
         elif valore_attivita_estere is not None:
             percentuale_sanzione = Decimal('0.06') if paese_black_list else Decimal('0.03')
             sanzione_base = valore_attivita_estere * percentuale_sanzione
@@ -1229,6 +1233,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             'interessi_di_mora': interessi.quantize(Decimal('0.01')),
             'totale': totale.quantize(Decimal('0.01'))
         }
+
 
     def calculate_total_gain_margin(self, tax_year: Year) -> Decimal:
         # Istanzia i report per capital gains e margin trading
