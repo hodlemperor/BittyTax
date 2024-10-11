@@ -198,6 +198,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         self.holdings_report: Optional[HoldingsReportRecord] = None
         self.yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]] = None
         self.daily_holdings_report: Optional[Dict[Year, Dict[date, DailyReportRecord]]] = {}
+        self.total_gain_margin = Decimal(0)
 
     def order_transactions(self) -> None:
         if config.debug:

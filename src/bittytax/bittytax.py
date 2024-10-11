@@ -330,10 +330,18 @@ def _do_each_tax_year(
         calc_cgt = tax.calculate_capital_gains(tax_year)
         calc_income = tax.calculate_income(tax_year)
         calc_margin_trading = tax.calculate_margin_trading(tax_year)
+        
+        # Calcolo di total_gain_margin e salvataggio
+        total_gain = calc_cgt.summary['total_gain']
+        margin_gains = calc_margin_trading.totals['gains']
+        margin_losses = calc_margin_trading.totals['losses']
+        tax.total_gain_margin = total_gain + margin_gains - margin_losses
+
         tax.tax_report[tax_year] = {
             "CapitalGains": calc_cgt,
             "Income": calc_income,
             "MarginTrading": calc_margin_trading,
+            "TotalGainMargin": tax.total_gain_margin,  # Salva anche nel report
         }
 
         if not summary_only:
@@ -342,7 +350,7 @@ def _do_each_tax_year(
             tax.calculate_daily_holdings_and_average(value_asset, tax_year)
 
     else:
-        # Calculate for all years
+        # Calcolo per tutti gli anni
         for year in sorted(tax.tax_events):
             print(f"{Fore.CYAN}calculating tax year {config.format_tax_year(year)}")
 
@@ -350,10 +358,18 @@ def _do_each_tax_year(
                 calc_cgt = tax.calculate_capital_gains(year)
                 calc_income = tax.calculate_income(year)
                 calc_margin_trading = tax.calculate_margin_trading(year)
+                
+                # Calcolo di total_gain_margin e salvataggio
+                total_gain = calc_cgt.summary['total_gain']
+                margin_gains = calc_margin_trading.totals['gains']
+                margin_losses = calc_margin_trading.totals['losses']
+                tax.total_gain_margin = total_gain + margin_gains - margin_losses
+
                 tax.tax_report[year] = {
                     "CapitalGains": calc_cgt,
                     "Income": calc_income,
                     "MarginTrading": calc_margin_trading,
+                    "TotalGainMargin": tax.total_gain_margin,  # Salva anche nel report
                 }
 
             else:
