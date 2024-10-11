@@ -1158,16 +1158,18 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         return total_gain_margin
 
     def calculate_penalty_due(self) -> None:
-        average_eur_value = self.total_gain_margin * Decimal('0.26')
+        if self.total_gain_margin is None:
+            # Se total_gain_margin è None, imposta penalty_base_value a 0
+            penalty_base_value = Decimal(0)
+        else:
+            penalty_base_value = self.total_gain_margin * Decimal('0.26')
     
-        if average_eur_value is None:
-            average_eur_value = Decimal(0)
-
         if config.debug:
-            print(f"Debug - Average EUR Value for Penalty: {average_eur_value}")
+            print(f"Debug - Penalty Base Value for Calculation: {penalty_base_value}")
 
         scadenza = date(datetime.now().year, 6, 30)  # Data di scadenza standard
-        self.penalty_due_cg = calcola_sanzione_annuale(imposta_dovuta=average_eur_value, data_scadenza=scadenza)
+        self.penalty_due_cg = calcola_sanzione_annuale(imposta_dovuta=penalty_base_value, data_scadenza=scadenza)
+
 
 
 class CalculateCapitalGains:
