@@ -1178,6 +1178,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         :param paese_black_list: True se le attività sono in paesi black list, False altrimenti
         :return: Un dizionario con la sanzione e gli interessi di mora calcolati
         """
+        if imposta_dovuta is not None and not isinstance(imposta_dovuta, Decimal):
+            raise TypeError(f"Expected imposta_dovuta to be of type Decimal, but got {type(imposta_dovuta)}")
+
         # Se entrambi sono None, restituisci zero per tutti i valori
         if imposta_dovuta is None and valore_attivita_estere is None:
             return {
