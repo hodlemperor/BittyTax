@@ -1162,7 +1162,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             print(f"Average BTC (Crypto Only): {average_btc_crypto_only}, Average EUR (Crypto Only): {average_eur_crypto_only}")
 
         print(f"Giacenza media calcolata per l'anno fiscale {tax_year}: {average_btc} BTC, {average_eur} EUR")
-
+    
+    @staticmethod
     def calcola_sanzione_annuale(
         *,
         imposta_dovuta: Optional[Decimal] = None,
