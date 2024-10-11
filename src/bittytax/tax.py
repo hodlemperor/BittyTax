@@ -6,7 +6,7 @@ import copy
 import itertools
 import sys
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import Decimal, getcontext
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import requests
