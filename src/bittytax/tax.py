@@ -77,7 +77,7 @@ class YearlyReportAsset(TypedDict):
 
 class YearlyReportTotal(TypedDict):
     total_value_in_fiat_at_end_of_year: Decimal
-    penalty_due: Decimal
+    penalty_due_rw: Optional[Decimal]
 
 class YearlyReportRecord(TypedDict):
     assets: Dict[AssetSymbol, YearlyReportAsset]
@@ -902,7 +902,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 totals=YearlyReportTotal(
                     total_value_in_fiat_start_of_year=total_value_in_fiat_start_of_year,
                     total_value_in_fiat_at_end_of_year=total_value_in_fiat,
-                    penalty_due=penalty_due_rw
+                    penalty_due_rw=penalty_due_rw
                 )
             )
 
