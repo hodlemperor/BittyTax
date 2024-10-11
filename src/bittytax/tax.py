@@ -621,6 +621,16 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         else:
             calc_cgt.tax_estimate_cgt(tax_year)
 
+        # Calcola il total_gain_margin per l'anno fiscale corrente
+        total_gain_margin = self.calculate_total_gain_with_margin(tax_year)
+
+        # Calcola la sanzione in base al total_gain_margin appena calcolato
+        self.calculate_penalty_due()
+
+        if config.debug:
+            print(f"Total Gain with Margin: {self.total_gain_margin}")
+            print(f"Penalty Due: {self.penalty_due_cg}")
+
         return calc_cgt
 
     def calculate_income(self, tax_year: Year) -> "CalculateIncome":
@@ -1130,6 +1140,36 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         print(f"Giacenza media calcolata per l'anno fiscale {tax_year}: {average_btc} BTC, {average_eur} EUR")
 
+    def calculate_total_gain_with_margin(self, tax_year: Year) -> Decimal:
+        # Calcola i guadagni di capital gain
+        calc_cgt = self.calculate_capital_gains(tax_year)
+        
+        # Calcola i guadagni e le perdite del margin trading
+        calc_margin = self.calculate_margin_trading(tax_year)
+        
+        # Somma i guadagni complessivi con quelli da margin trading
+        total_gain = calc_cgt.short_term_totals["gain"] + calc_cgt.long_term_totals["gain"]
+        total_gain_margin = total_gain + calc_margin.totals['gains'] - calc_margin.totals['losses']
+        
+        if config.debug:
+            print(f"Total Gain: {total_gain}")
+            print(f"Total Gain with Margin: {total_gain_margin}")
+        
+        return total_gain_margin
+
+    def calculate_penalty_due(self) -> None:
+        average_eur_value = self.total_gain_margin * Decimal('0.26')
+    
+        if average_eur_value is None:
+            average_eur_value = Decimal(0)
+
+        if config.debug:
+            print(f"Debug - Average EUR Value for Penalty: {average_eur_value}")
+
+        scadenza = date(datetime.now().year, 6, 30)  # Data di scadenza standard
+        self.penalty_due_cg = calcola_sanzione_annuale(imposta_dovuta=average_eur_value, data_scadenza=scadenza)
+
+
 class CalculateCapitalGains:
     # Rate changes start from 6th April in previous year, i.e. 2022 is for tax year 2021/22
     CG_DATA_INDIVIDUAL: Dict[Year, CapitalGainsIndividual] = {
@@ -1294,36 +1334,6 @@ class CalculateCapitalGains:
         self.total_proceeds = Decimal(0)
         self.total_cost = Decimal(0)
         self.total_gain = Decimal(0)
-        self.total_gain_margin = Decimal(0)
-        self.penalty_due_cg = {} 
-
-    def update_totals(self, margin_totals: Optional[MarginReportTotal] = None) -> None:
-        if margin_totals is None:
-            margin_totals = {"gains": Decimal(0), "losses": Decimal(0), "fees": Decimal(0)}
-
-        # Debug: Stampa i valori di margin_totals
-        print(f"Debug - Margin Totals: {margin_totals}")
-
-        # Calcola i totali combinati da short_term_totals e long_term_totals
-        self.total_proceeds = self.short_term_totals["proceeds"] + self.long_term_totals["proceeds"]
-        self.total_cost = self.short_term_totals["cost"] + self.long_term_totals["cost"]
-        self.total_gain = self.short_term_totals["gain"] + self.long_term_totals["gain"]
-
-        # Debug: Stampa i valori intermedi
-        print(f"Debug - Total Proceeds: {self.total_proceeds}")
-        print(f"Debug - Total Cost: {self.total_cost}")
-        print(f"Debug - Total Gain: {self.total_gain}")
-
-        # Usa i totali del margine per aggiornare il guadagno totale
-        self.total_gain_margin = self.total_gain + margin_totals["gains"] - margin_totals["losses"]
-
-        # Debug: Controlla se total_gain_margin è None
-        if self.total_gain_margin is None:
-            print("Debug - Total Gain Margin is None, setting to Decimal(0)")
-            self.total_gain_margin = Decimal(0)
-        else:
-            print(f"Debug - Total Gain Margin: {self.total_gain_margin}")
-
 
     def get_proceeds_limit(self, tax_year: Year) -> Decimal:
         if "proceeds_limit" in self.CG_DATA_INDIVIDUAL[tax_year]:
@@ -1369,20 +1379,9 @@ class CalculateCapitalGains:
         else:
             raise RuntimeError("Unexpected disposal_type")
 
-        # Aggiornamento dei totali complessivi
-        self.update_totals()
-        self.calculate_penalty_due()
-
-    def calculate_penalty_due(self) -> None:
-        average_eur_value = self.total_gain_margin * Decimal('0.26')
-        if average_eur_value is None:
-            average_eur_value = Decimal(0)
-
-        print(f"Debug - Average EUR Value for Penalty: {average_eur_value}")
-
-        scadenza = date(datetime.now().year, 6, 30)  # Data di scadenza standard
-        self.penalty_due_cg = calcola_sanzione_annuale(imposta_dovuta=average_eur_value, data_scadenza=scadenza)
-
+        total_proceeds = self.short_term_totals["proceeds"] + self.long_term_totals["proceeds"]
+        total_cost = self.short_term_totals["cost"] + self.long_term_totals["cost"]
+        total_gain = self.short_term_totals["gain"] + self.long_term_totals["gain"]
 
     def non_tax_summary(self, te: TaxEventNoGainNoLoss) -> None:
         if te.t_type.value not in self.non_tax_by_type:
