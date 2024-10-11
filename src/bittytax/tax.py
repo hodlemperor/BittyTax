@@ -1122,6 +1122,30 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         print(f"Giacenza media calcolata per l'anno fiscale {tax_year}: {average_btc} BTC, {average_eur} EUR")
 
+    def calcola_sanzioni_annuali(self, average_eur_value, paese_cooperante=True, giorni_ritardo=None):
+        """
+        Calcola le sanzioni annuali per omessa dichiarazione di conti esteri.
+
+        :param average_eur_value: Il valore medio annuale del conto in EUR
+        :param paese_cooperante: Se il paese è cooperante per lo scambio di informazioni fiscali
+        :param giorni_ritardo: Numero di giorni di ritardo per calcolare la riduzione del ravvedimento operoso
+        :return: L'importo della sanzione annuale, con o senza riduzione
+        """
+        # Determina l'aliquota di base
+        sanzione_base = average_eur_value * (0.03 if paese_cooperante else 0.06)
+
+        # Calcola la riduzione se ravvedimento operoso è applicabile
+        if giorni_ritardo is not None:
+            if giorni_ritardo <= 90:
+                sanzione_base /= 9  # Riduzione a 1/9
+            elif giorni_ritardo <= 365:
+                sanzione_base /= 8  # Riduzione a 1/8
+            elif giorni_ritardo <= 730:
+                sanzione_base /= 7  # Riduzione a 1/7
+            else:
+                sanzione_base /= 6  # Riduzione a 1/6
+
+        return sanzione_base
 
 class CalculateCapitalGains:
     # Rate changes start from 6th April in previous year, i.e. 2022 is for tax year 2021/22
@@ -1284,6 +1308,19 @@ class CalculateCapitalGains:
         }
         self.non_tax_by_type: Dict[str, List[TaxEventNoGainNoLoss]] = {}
         self.non_tax_by_type_total: Dict[str, CapitalGainsReportTotal] = {}
+        self.total_proceeds = Decimal(0)
+        self.total_cost = Decimal(0)
+        self.total_gain = Decimal(0)
+        self.total_gain_margin = Decimal(0)
+
+    def update_totals(self, margin_totals: MarginReportTotal) -> None:
+        # Calcola i totali combinati da short_term_totals e long_term_totals
+        self.total_proceeds = self.short_term_totals["proceeds"] + self.long_term_totals["proceeds"]
+        self.total_cost = self.short_term_totals["cost"] + self.long_term_totals["cost"]
+        self.total_gain = self.short_term_totals["gain"] + self.long_term_totals["gain"]
+        
+        # Usa i totali del margine per aggiornare il guadagno totale
+        self.total_gain_margin = self.total_gain + margin_totals["gains"] - margin_totals["losses"]
 
     def get_proceeds_limit(self, tax_year: Year) -> Decimal:
         if "proceeds_limit" in self.CG_DATA_INDIVIDUAL[tax_year]:
@@ -1328,6 +1365,9 @@ class CalculateCapitalGains:
             self.long_term_totals["gain"] += te.gain
         else:
             raise RuntimeError("Unexpected disposal_type")
+
+        # Aggiornamento dei totali complessivi
+        self.update_totals()
 
     def non_tax_summary(self, te: TaxEventNoGainNoLoss) -> None:
         if te.t_type.value not in self.non_tax_by_type:

@@ -8,13 +8,6 @@
 
 <h3>Capital Gain</h3>
 
-        {% set short_term_totals = cgains['short_term_totals'] %}
-        {% set long_term_totals = cgains['long_term_totals'] %}
-
-        {% set total_proceeds = short_term_totals['proceeds'] + long_term_totals['proceeds'] %}
-        {% set total_cost = short_term_totals['cost'] + long_term_totals['cost'] %}
-        {% set total_gain = short_term_totals['gain'] + long_term_totals['gain'] %}
-
 <table repeat="1" width="100%" class="asset-table">
     <tr>
         <th align="left">Proceeds</th>
@@ -23,17 +16,19 @@
         <th align="right">Tax (26%)</th>
     </tr>
     <tr>
-        <td align="left">{{ total_proceeds|valuefilter }}</td>
-        <td align="left">{{ total_cost|valuefilter }}</td>
-        {% set total_gain_margin = total_gain + margin.totals['gains'] - margin.totals['losses'] %}
-        {% if total_gain_margin >= 0 %}
-        <td align="right">{{ total_gain_margin|valuefilter }}</td>
+        <td align="left">{{ cgains.total_proceeds|valuefilter }}</td>
+        <td align="left">{{ cgains.total_cost|valuefilter }}</td>
+        
+        {% if cgains.total_gain_margin >= 0 %}
+            <td align="right">{{ cgains.total_gain_margin|valuefilter }}</td>
         {% else %}
-        <td align="right" class="red-font">{{ total_gain_margin|valuefilter }}</td>
+            <td align="right" class="red-font">{{ cgains.total_gain_margin|valuefilter }}</td>
         {% endif %}
-        <td align="right">{{ (total_gain_margin * decimal.Decimal('0.26'))|valuefilter }}</td>
+        
+        <td align="right">{{ (cgains.total_gain_margin * decimal.Decimal('0.26'))|valuefilter }}</td>
     </tr>
 </table>
+
 
 <h3>Holdings</h3>
 
