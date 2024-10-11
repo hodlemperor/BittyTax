@@ -161,7 +161,9 @@ class ReportPdf:
         return formatted_value.rstrip('0').rstrip('.') if '.' in formatted_value else formatted_value
 
     @staticmethod
-    def valuefilter(value: Decimal) -> str:
+    def valuefilter(value: Optional[Decimal]) -> str:
+        if value is None:
+            return "&euro;0.00"  # Ritorna un valore di default per None, oppure usa la valuta configurata
         if config.ccy == "GBP":
             return f"&pound;{value:0,.2f}"
         if config.ccy == "EUR":
@@ -173,6 +175,7 @@ class ReportPdf:
         if config.ccy in ("DKK", "NOK", "SEK"):
             return f"kr.{value:0,.2f}"
         raise RuntimeError("Currency not supported")
+
 
     @staticmethod
     def ratefilter(rate: Optional[Decimal]) -> str:
