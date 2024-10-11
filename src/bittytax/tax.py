@@ -198,7 +198,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         self.holdings_report: Optional[HoldingsReportRecord] = None
         self.yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]] = None
         self.daily_holdings_report: Optional[Dict[Year, Dict[date, DailyReportRecord]]] = {}
-        self.total_gain_margin = Decimal(0)
 
     def order_transactions(self) -> None:
         if config.debug:
@@ -1470,6 +1469,7 @@ class CalculateMarginTrading:
             "gains": Decimal(0),
             "losses": Decimal(0),
             "fees": Decimal(0),
+            "net_total": Decimal(0) 
         }
         self.contracts: Dict[Tuple[Wallet, Note], List[TaxEventMarginTrade]] = {}
         self.contract_totals: Dict[Tuple[Wallet, Note], MarginReportTotal] = {}
@@ -1478,6 +1478,7 @@ class CalculateMarginTrading:
         self.totals["gains"] += te.gain
         self.totals["losses"] += te.loss
         self.totals["fees"] += te.fee
+        self.totals["net_total"] += te.gain - te.loss
 
         if (te.wallet, te.note) not in self.contracts:
             self.contracts[(te.wallet, te.note)] = []
@@ -1492,11 +1493,13 @@ class CalculateMarginTrading:
                         "gains": te.gain,
                         "losses": te.loss,
                         "fees": te.fee,
+                        "net_total": te.gain - te.loss
                     }
                 else:
                     self.contract_totals[(wallet, note)]["gains"] += te.gain
                     self.contract_totals[(wallet, note)]["losses"] += te.loss
                     self.contract_totals[(wallet, note)]["fees"] += te.fee
+                    self.contract_totals[(wallet, note)]["net_total"] += te.gain - te.loss
 
                 if config.debug:
                     print(f"{Fore.GREEN}margin: {te.t}")
@@ -1507,6 +1510,7 @@ class CalculateMarginTrading:
             f'{wallet} {note}: gains={config.sym()}{self.contract_totals[(wallet, note)]["gains"]} '
             f'losses={config.sym()}{self.contract_totals[(wallet, note)]["losses"]} '
             f'fess={config.sym()}{self.contract_totals[(wallet, note)]["fees"]} '
+            f'net_total={config.sym()}{self.totals["net_total"]} '
         )
 
 # Tassi di interesse per anno
