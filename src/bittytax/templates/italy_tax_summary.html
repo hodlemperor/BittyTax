@@ -14,6 +14,7 @@
         <th align="left">Cost Basis</th>
         <th align="right">Gain or (Loss)</th>
         <th align="right">Tax (26%)</th>
+        <th align="right">Penalty Due</th> <!-- Nuova colonna per la sanzione -->
     </tr>
     <tr>
         <td align="left">{{ cgains.total_proceeds|valuefilter }}</td>
@@ -26,9 +27,9 @@
         {% endif %}
         
         <td align="right">{{ (cgains.total_gain_margin * decimal.Decimal('0.26'))|valuefilter }}</td>
+        <td align="right">{{ cgains.penalty_due|valuefilter }}</td> <!-- Mostra la sanzione -->
     </tr>
 </table>
-
 
 <h3>Holdings</h3>
 

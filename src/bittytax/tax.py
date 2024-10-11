@@ -1312,6 +1312,7 @@ class CalculateCapitalGains:
         self.total_cost = Decimal(0)
         self.total_gain = Decimal(0)
         self.total_gain_margin = Decimal(0)
+        self.penalty_due = Decimal(0)  # Nuovo attributo per la sanzione
 
     def update_totals(self, margin_totals: MarginReportTotal) -> None:
         # Calcola i totali combinati da short_term_totals e long_term_totals
@@ -1368,6 +1369,15 @@ class CalculateCapitalGains:
 
         # Aggiornamento dei totali complessivi
         self.update_totals()
+        self.calculate_penalty_due()
+
+    def calculate_penalty_due(self) -> None:
+        average_eur_value = self.total_gain_margin * Decimal('0.26')  # Usa l'importo del totale in EUR
+        giorni_ritardo = 0  # Numero dei giorni di ritardo
+        paese_cooperante = True  # Assume che il paese sia cooperante, modifica se necessario
+        
+        # Usa la funzione già esistente per calcolare la sanzione
+        self.penalty_due = self.calcola_sanzioni_annuali(average_eur_value, paese_cooperante, giorni_ritardo)
 
     def non_tax_summary(self, te: TaxEventNoGainNoLoss) -> None:
         if te.t_type.value not in self.non_tax_by_type:
