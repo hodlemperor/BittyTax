@@ -914,7 +914,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             scadenza = date(year, 6, 30)  # Data di scadenza impostata al 30 giugno
 
             # Calcola la sanzione utilizzando la data di scadenza corretta
-            penalty_due_rw = self.calcola_sanzione_annuale(valore_attivita_estere=total_value_in_fiat, data_scadenza=scadenza)
+            penalty_due_rw = self.calcola_sanzione_annuale(imposta_dovuta=None, valore_attivita_estere=total_value_in_fiat, data_scadenza=scadenza)
 
             if total_gain_margin is None:
                 # Se total_gain_margin è None, imposta penalty_base_value a 0
@@ -925,7 +925,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             if config.debug:
                 print(f"Debug - Penalty Base Value for Calculation: {penalty_base_value}")
 
-            penalty_due_cg = self.calcola_sanzione_annuale(imposta_dovuta=penalty_base_value, data_scadenza=scadenza)
+            penalty_due_cg = self.calcola_sanzione_annuale(imposta_dovuta=penalty_base_value, valore_attivita_estere=None, data_scadenza=scadenza)
         
             # Save the total amount in the report
             yearly_holdings_report[year] = YearlyReportRecord(
