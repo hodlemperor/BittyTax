@@ -6,7 +6,7 @@ import copy
 import itertools
 import sys
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import requests
@@ -918,7 +918,38 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         self.yearly_holdings_report = yearly_holdings_report
         tqdm.write("Yearly report saved to self.yearly_holdings_report.")
 
+
+    def calcola_interessi_mora(self, importo_dovuto, data_scadenza, data_pagamento) -> Decimal:
+        tassi_interessi = [
+            (date(2016, 1, 1), date(2016, 12, 31), Decimal('0.002')),
+            (date(2017, 1, 1), date(2017, 12, 31), Decimal('0.001')),
+            (date(2018, 1, 1), date(2018, 12, 31), Decimal('0.003')),
+            (date(2019, 1, 1), date(2019, 12, 31), Decimal('0.008')),
+            (date(2020, 1, 1), date(2020, 12, 31), Decimal('0.0005')),
+            (date(2021, 1, 1), date(2021, 12, 31), Decimal('0.0001')),
+            (date(2022, 1, 1), date(2022, 12, 31), Decimal('0.0125')),
+            (date(2023, 1, 1), date(2023, 12, 31), Decimal('0.05')),
+            (date(2024, 1, 1), date(9999, 12, 31), Decimal('0.025')),
+        ]
+
+        interessi = Decimal('0.00')
+        data_inizio = data_scadenza
+        data_fine = data_pagamento
+
+        for inizio, fine, tasso in tassi_interessi:
+            if data_inizio >= data_fine:
+                break
+            periodo_inizio = max(data_inizio, inizio)
+            periodo_fine = min(data_fine, fine)
+            if periodo_inizio < periodo_fine:
+                giorni = (periodo_fine - periodo_inizio).days
+                interessi_annui = (importo_dovuto * tasso * giorni) / Decimal('365')
+                interessi += interessi_annui
+
+        return interessi.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
     def calcola_sanzione_imposta_dovuta(
+        self,
         imposta_dovuta: Decimal,
         tax_year: int,
         data_pagamento: date = None,
@@ -955,7 +986,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
 
         # Calcolo degli interessi di mora
-        interessi = calcola_interessi_mora(imposta_dovuta, data_scadenza, data_pagamento)
+        interessi = self.calcola_interessi_mora(imposta_dovuta, data_scadenza, data_pagamento)
 
         totale = sanzione + interessi
 
@@ -966,13 +997,14 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         }
 
     def calcola_sanzione_valore_attivita_estere(
+        self,
         valore_attivita_estere: Decimal,
         data_scadenza: date,
         paese_black_list: bool,
         data_pagamento: date = None,
     ) -> dict:
         if not isinstance(valore_attivita_estere, Decimal):
-            raise TypeError(f"Expected valore_attivita_estere to be of type Decimal, but got {type(valore_attivita_estere)}")
+            TypeError(f"Expected valore_attivita_estere to be of type Decimal, but got {type(valore_attivita_estere)}")
         if valore_attivita_estere <= 0:
             return {
                 'sanzione': Decimal('0.00'),
@@ -997,7 +1029,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             sanzione = sanzione_base * (Decimal('1') / Decimal('3'))
 
         # Calcolo degli interessi di mora
-        interessi = calcola_interessi_mora(valore_attivita_estere, data_scadenza, data_pagamento)
+        interessi = self.calcola_interessi_mora(valore_attivita_estere, data_scadenza, data_pagamento)
 
         totale = sanzione + interessi
 
@@ -1006,35 +1038,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             'interessi_di_mora': interessi.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             'totale': totale.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         }
-
-    def calcola_interessi_mora(importo_dovuto, data_scadenza, data_pagamento):
-        tassi_interessi = [
-            (datetime(2016, 1, 1).date(), datetime(2016, 12, 31).date(), Decimal('0.002')),
-            (datetime(2017, 1, 1).date(), datetime(2017, 12, 31).date(), Decimal('0.001')),
-            (datetime(2018, 1, 1).date(), datetime(2018, 12, 31).date(), Decimal('0.003')),
-            (datetime(2019, 1, 1).date(), datetime(2019, 12, 31).date(), Decimal('0.008')),
-            (datetime(2020, 1, 1).date(), datetime(2020, 12, 31).date(), Decimal('0.0005')),
-            (datetime(2021, 1, 1).date(), datetime(2021, 12, 31).date(), Decimal('0.0001')),
-            (datetime(2022, 1, 1).date(), datetime(2022, 12, 31).date(), Decimal('0.0125')),
-            (datetime(2023, 1, 1).date(), datetime(2023, 12, 31).date(), Decimal('0.05')),
-            (datetime(2024, 1, 1).date(), datetime(9999, 12, 31).date(), Decimal('0.025')),
-        ]
-
-        interessi = Decimal('0.00')
-        data_inizio = data_scadenza
-        data_fine = data_pagamento
-
-        for inizio, fine, tasso in tassi_interessi:
-            if data_inizio >= data_fine:
-                break
-            periodo_inizio = max(data_inizio, inizio)
-            periodo_fine = min(data_fine, fine)
-            if periodo_inizio < periodo_fine:
-                giorni = (periodo_fine - periodo_inizio).days
-                interessi_annui = (importo_dovuto * tasso * giorni) / Decimal('365')
-                interessi += interessi_annui
-
-        return interessi.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
     def check_holding_threshold(self, value_asset: ValueAsset, tax_year: int, threshold: Decimal = Decimal("51645.69")) -> bool:
