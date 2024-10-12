@@ -335,11 +335,18 @@ def _do_each_tax_year(
         combined_total = calc_cgt.total_gain + calc_margin_trading.totals["net_total"]
         print(f"Combined Total (Capital Gains + Margin Trading Net Total): {combined_total}")
 
+        imposta_dovuta = combined_total  # Sostituisci con il calcolo specifico dell'imposta dovuta
+        paese_black_list = False  # Imposta a True se il paese è nella lista nera
+
+        # Calcola la sanzione sull'imposta dovuta
+        sanzione_imposta = tax.calcola_sanzione_imposta_dovuta(imposta_dovuta, tax_year)
+
         tax.tax_report[tax_year] = {
             "CapitalGains": calc_cgt,
             "Income": calc_income,
             "MarginTrading": calc_margin_trading,
-            "CombinedTotal": combined_total  # Aggiungi il totale combinato al report
+            "CombinedTotal": combined_total,
+            "SanzioneImposta": sanzione_imposta,
         }
 
         if not summary_only:
@@ -361,11 +368,18 @@ def _do_each_tax_year(
                 combined_total = calc_cgt.total_gain + calc_margin_trading.totals["net_total"]
                 print(f"Combined Total for {year} (Capital Gains + Margin Trading): {combined_total}")
 
+                imposta_dovuta = combined_total  # Sostituisci con il calcolo specifico dell'imposta dovuta
+                paese_black_list = False  # Imposta a True se il paese è nella lista nera
+
+                # Calcola la sanzione sull'imposta dovuta
+                sanzione_imposta = tax.calcola_sanzione_imposta_dovuta(imposta_dovuta, tax_year)
+
                 tax.tax_report[year] = {
                     "CapitalGains": calc_cgt,
                     "Income": calc_income,
                     "MarginTrading": calc_margin_trading,
-                    "CombinedTotal": combined_total  # Aggiungi il totale combinato al report per ogni anno
+                    "CombinedTotal": combined_total,
+                    "SanzioneImposta": sanzione_imposta,
                 }
 
             else:

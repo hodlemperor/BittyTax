@@ -78,6 +78,7 @@ class YearlyReportAsset(TypedDict):
 class YearlyReportTotal(TypedDict):
     total_value_in_fiat_at_end_of_year: Decimal
     total_value_in_fiat_start_of_year: Decimal
+    penalty_due_rw: Decimal
 
 class YearlyReportRecord(TypedDict):
     assets: Dict[AssetSymbol, YearlyReportAsset]
@@ -890,12 +891,23 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         days_held=days_held
                     )
 
+            # Calcola la data di scadenza per l'anno fiscale
+            scadenza = date(year, 6, 30)  # Data di scadenza impostata al 30 giugno
+
+            # Calcola la sanzione utilizzando la data di scadenza corretta
+            penalty_due_rw = self.calcola_sanzione_valore_attivita_estere(
+	            valore_attivita_estere=total_value_in_fiat,
+	            data_scadenza=scadenza,
+	            paese_black_list=False,  # oppure True se pertinente
+            )
+
             # Save the total amount in the report
             yearly_holdings_report[year] = YearlyReportRecord(
                 assets=assets_report,
                 totals=YearlyReportTotal(
                     total_value_in_fiat_start_of_year=total_value_in_fiat_start_of_year,
-                    total_value_in_fiat_at_end_of_year=total_value_in_fiat
+                    total_value_in_fiat_at_end_of_year=total_value_in_fiat,
+                    penalty_due_rw=penalty_due_rw
                 )
             )
 
@@ -905,6 +917,110 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         # Save the report in the self.yearly_holdings_report instance field
         self.yearly_holdings_report = yearly_holdings_report
         tqdm.write("Yearly report saved to self.yearly_holdings_report.")
+
+    def calcola_sanzione_imposta_dovuta(
+        imposta_dovuta: Decimal,
+        data_scadenza: date,
+    ) -> dict:
+        if not isinstance(imposta_dovuta, Decimal):
+            raise TypeError(f"Expected imposta_dovuta to be of type Decimal, but got {type(imposta_dovuta)}")
+
+        giorni_ritardo = max((datetime.now().date() - data_scadenza).days, 0)
+
+        # Tassi di interesse per anno
+        tassi_interessi = {
+            (2016, 2016): Decimal('0.002'),
+            (2017, 2017): Decimal('0.001'),
+            (2018, 2018): Decimal('0.003'),
+            (2019, 2019): Decimal('0.008'),
+            (2020, 2020): Decimal('0.0005'),
+            (2021, 2021): Decimal('0.0001'),
+            (2022, 2022): Decimal('0.0125'),
+            (2023, 2023): Decimal('0.05'),
+            (2024, 9999): Decimal('0.025')  # Per il 2024 e oltre
+        }
+
+        # Calcolo della sanzione per imposta_dovuta
+        sanzione_base = imposta_dovuta * Decimal('0.30')
+        if giorni_ritardo <= 14:
+            sanzione = imposta_dovuta * Decimal('0.001') * giorni_ritardo
+        elif giorni_ritardo <= 30:
+            sanzione = sanzione_base * (Decimal('1') / Decimal('10'))
+        elif giorni_ritardo <= 90:
+            sanzione = sanzione_base * (Decimal('1') / Decimal('9'))
+        elif giorni_ritardo <= 365:
+            sanzione = sanzione_base * (Decimal('1') / Decimal('8'))
+        elif giorni_ritardo <= 730:
+            sanzione = sanzione_base * (Decimal('1') / Decimal('7'))
+        else:
+            sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
+
+        # Calcolo degli interessi
+        interessi = Decimal('0')
+        anno_corrente = datetime.now().year
+        for (anno_inizio, anno_fine), tasso in tassi_interessi.items():
+            if anno_inizio <= anno_corrente <= anno_fine:
+                interessi += imposta_dovuta * tasso
+
+        totale = sanzione + interessi
+
+        return {
+            'sanzione': sanzione.quantize(Decimal('0.01')),
+            'interessi_di_mora': interessi.quantize(Decimal('0.01')),
+            'totale': totale.quantize(Decimal('0.01'))
+        }
+
+    def calcola_sanzione_valore_attivita_estere(
+        valore_attivita_estere: Decimal,
+        tax_year: date,
+        paese_black_list: bool,
+    ) -> dict:
+        if not isinstance(valore_attivita_estere, Decimal):
+            raise TypeError(f"Expected valore_attivita_estere to be of type Decimal, but got {type(valore_attivita_estere)}")
+
+        # Tassi di interesse per anno
+        tassi_interessi = {
+            (2016, 2016): Decimal('0.002'),
+            (2017, 2017): Decimal('0.001'),
+            (2018, 2018): Decimal('0.003'),
+            (2019, 2019): Decimal('0.008'),
+            (2020, 2020): Decimal('0.0005'),
+            (2021, 2021): Decimal('0.0001'),
+            (2022, 2022): Decimal('0.0125'),
+            (2023, 2023): Decimal('0.05'),
+            (2024, 9999): Decimal('0.025')  # Per il 2024 e oltre
+        }
+
+        data_scadenza = date(tax_year, 12, 31)  # Sostituisci con la data di scadenza corretta
+
+        giorni_ritardo = max((datetime.now().date() - data_scadenza).days, 0)
+
+        # Calcolo della sanzione per valore_attivita_estere
+        percentuale_sanzione = Decimal('0.06') if paese_black_list else Decimal('0.03')
+        sanzione_base = valore_attivita_estere * percentuale_sanzione
+        if giorni_ritardo <= 90:
+            sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
+        elif giorni_ritardo <= 365:
+            sanzione = sanzione_base * (Decimal('1') / Decimal('5'))
+        elif giorni_ritardo <= 730:
+            sanzione = sanzione_base * (Decimal('1') / Decimal('4'))
+        else:
+            sanzione = sanzione_base * (Decimal('1') / Decimal('3'))
+
+        # Calcolo degli interessi
+        interessi = Decimal('0')
+        anno_corrente = datetime.now().year
+        for (anno_inizio, anno_fine), tasso in tassi_interessi.items():
+            if anno_inizio <= anno_corrente <= anno_fine:
+                interessi += valore_attivita_estere * tasso
+
+        totale = sanzione + interessi
+
+        return {
+            'sanzione': sanzione.quantize(Decimal('0.01')),
+            'interessi_di_mora': interessi.quantize(Decimal('0.01')),
+            'totale': totale.quantize(Decimal('0.01'))
+        }
 
     def check_holding_threshold(self, value_asset: ValueAsset, tax_year: int, threshold: Decimal = Decimal("51645.69")) -> bool:
         """
