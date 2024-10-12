@@ -42,10 +42,11 @@ class TransactionHistory:
                 if tr.sell.asset not in config.fiat_list and tr.buy.asset not in config.fiat_list:
                     if tr.sell.asset not in config.stablecoin_list and tr.buy.asset not in config.stablecoin_list:
                         transaction_year = tr.buy.timestamp.year
+                        # Controlla se la transazione è prima del 2023
                         if transaction_year <= 2022:
-                            is_crypto2crypto_taxable = True  # Sempre tassabile fino al 2022
+                            is_crypto2crypto_taxable = config.is_crypto2crypto_taxable_before_2023
                         else:
-                            is_crypto2crypto_taxable = config.is_crypto2crypto_taxable  # Dipende dalla configurazione per gli anni successivi
+                            is_crypto2crypto_taxable = config.is_crypto2crypto_taxable
 
                         if not is_crypto2crypto_taxable:
                             tr.t_type = TrType.CRYPTO_CRYPTO
