@@ -330,20 +330,14 @@ def _do_each_tax_year(
         calc_cgt = tax.calculate_capital_gains(tax_year)
         calc_income = tax.calculate_income(tax_year)
         calc_margin_trading = tax.calculate_margin_trading(tax_year)
-        total_gain_with_margin = (
-            calc_cgt.summary["total_gain"] 
-            + calc_margin_trading.totals["gains"] 
-            - calc_margin_trading.totals["losses"]
-        )
         tax.tax_report[tax_year] = {
             "CapitalGains": calc_cgt,
             "Income": calc_income,
             "MarginTrading": calc_margin_trading,
-            "TotalGains": total_gain_with_margin,
         }
 
         if not summary_only:
-            tax.calculate_yearly_holdings(value_asset,total_gain_with_margin,tax_year)
+            tax.calculate_yearly_holdings(value_asset, tax_year)
             tax.check_holding_threshold(value_asset, tax_year)
             tax.calculate_daily_holdings_and_average(value_asset, tax_year)
 
@@ -356,16 +350,10 @@ def _do_each_tax_year(
                 calc_cgt = tax.calculate_capital_gains(year)
                 calc_income = tax.calculate_income(year)
                 calc_margin_trading = tax.calculate_margin_trading(year)
-                total_gain_with_margin = (
-                    calc_cgt.summary["total_gain"] 
-                    + calc_margin_trading.totals["gains"] 
-                    - calc_margin_trading.totals["losses"]
-                )
                 tax.tax_report[year] = {
                     "CapitalGains": calc_cgt,
                     "Income": calc_income,
                     "MarginTrading": calc_margin_trading,
-                    "TotalGains": total_gain_with_margin,
                 }
 
             else:
@@ -373,11 +361,12 @@ def _do_each_tax_year(
 
         if not summary_only:
             tax.calculate_holdings(value_asset)
-            tax.calculate_yearly_holdings(value_asset,total_gain_with_margin)
+            tax.calculate_yearly_holdings(value_asset)
             for year in sorted(tax.tax_events):
                 if year in CCG.CG_DATA_INDIVIDUAL:
                     tax.check_holding_threshold(value_asset, year)
                     tax.calculate_daily_holdings_and_average(value_asset, year)
+
 
 def _do_export(transaction_records: List[TransactionRecord]) -> None:
     value_asset = ValueAsset()
