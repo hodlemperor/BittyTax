@@ -164,8 +164,8 @@
 <table class="total-table">
     <tr>
         <td align="left"><strong>Total</strong></td>
-        <td align="right">btc{{ daily_holdings_report[tax_year].get(tax_year ~ "-01-01", {}).get("btc_balance", "N/A") }}</td>
-        <td align="right">btc{{ daily_holdings_report[tax_year].get(tax_year ~ "-12-31", {}).get("btc_balance", "N/A") }}</td>
+        <td align="right">btc{{ daily_holdings_report[tax_year].get("01-01-" ~ tax_year, {}).get("btc_balance", "N/A") }}</td>
+        <td align="right">btc{{ daily_holdings_report[tax_year].get("31-12-" ~ tax_year, {}).get("btc_balance", "N/A") }}</td>
         <td align="right">btc{{ daily_holdings_report[tax_year]['average']['average_btc_balance'] | format_decimal }}</td>
         <td></td>
         <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_start_of_year | valuefilter }}</strong></td>
