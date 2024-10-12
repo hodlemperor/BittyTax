@@ -330,12 +330,16 @@ def _do_each_tax_year(
         calc_cgt = tax.calculate_capital_gains(tax_year)
         calc_income = tax.calculate_income(tax_year)
         calc_margin_trading = tax.calculate_margin_trading(tax_year)
-        calc_cgt_total = tax.calculate_total_gain_margin(year,calc_cgt,calc_margin_trading)
+        total_gain_with_margin = (
+            calc_cgt.summary["total_gain"] 
+            + calc_margin_trading.totals["gains"] 
+            - calc_margin_trading.totals["losses"]
+        )
         tax.tax_report[tax_year] = {
             "CapitalGains": calc_cgt,
             "Income": calc_income,
             "MarginTrading": calc_margin_trading,
-            "TotalGains": calc_cgt_total,
+            "TotalGains": total_gain_with_margin,
         }
 
         if not summary_only:
@@ -352,12 +356,16 @@ def _do_each_tax_year(
                 calc_cgt = tax.calculate_capital_gains(year)
                 calc_income = tax.calculate_income(year)
                 calc_margin_trading = tax.calculate_margin_trading(year)
-                calc_cgt_total = tax.calculate_total_gain_margin(year,calc_cgt,calc_margin_trading)
+                total_gain_with_margin = (
+                    calc_cgt.summary["total_gain"] 
+                    + calc_margin_trading.totals["gains"] 
+                    - calc_margin_trading.totals["losses"]
+                )
                 tax.tax_report[year] = {
                     "CapitalGains": calc_cgt,
                     "Income": calc_income,
                     "MarginTrading": calc_margin_trading,
-                    "TotalGains": calc_cgt_total,
+                    "TotalGains": total_gain_with_margin,
                 }
 
             else:
