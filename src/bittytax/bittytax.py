@@ -335,7 +335,7 @@ def _do_each_tax_year(
         combined_total = calc_cgt.total_gain + calc_margin_trading.totals["net_total"]
         print(f"Combined Total (Capital Gains + Margin Trading Net Total): {combined_total}")
 
-        imposta_dovuta = combined_total  # Sostituisci con il calcolo specifico dell'imposta dovuta
+        imposta_dovuta = combined_total * 0.26  # Sostituisci con il calcolo specifico dell'imposta dovuta
         paese_black_list = False  # Imposta a True se il paese è nella lista nera
 
         # Calcola la sanzione sull'imposta dovuta
