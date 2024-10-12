@@ -77,6 +77,7 @@ class YearlyReportAsset(TypedDict):
 
 class YearlyReportTotal(TypedDict):
     total_value_in_fiat_at_end_of_year: Decimal
+    total_value_in_fiat_start_of_year: Decimal
 
 class YearlyReportRecord(TypedDict):
     assets: Dict[AssetSymbol, YearlyReportAsset]
