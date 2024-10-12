@@ -749,7 +749,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         return first_year
 
-    def calculate_yearly_holdings(self, value_asset: ValueAsset, tax_year: Optional[int] = None) -> None:
+    def calculate_yearly_holdings(self, value_asset: ValueAsset, total_gain_margin: Decimal, tax_year: Optional[int] = None, ) -> None:
         """
         Calculate the annual holdings for each asset held with a fiat value and quantity.
         If a tax_year is given, generate the report for that year only.
@@ -904,11 +904,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         value_in_fiat_at_end_of_year=value_in_fiat,
                         days_held=days_held
                     )
-
-            # Calcola total_gain_margin per l'anno corrente
-            total_gain_margin = self.calculate_total_gain_margin(year)
-            if config.debug:
-                print(f"Year {year}: Total Gain Margin = {total_gain_margin}")
 
             # Calcola la data di scadenza per l'anno fiscale
             scadenza = date(year, 6, 30)  # Data di scadenza impostata al 30 giugno
@@ -1172,19 +1167,19 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         print(f"Giacenza media calcolata per l'anno fiscale {tax_year}: {average_btc} BTC, {average_eur} EUR")
 
-    def calculate_total_gain_margin(self, tax_year: Year) -> Decimal:
+    def calculate_total_gain_margin(tax_year: Year, calc_cgt,calc_margin_trading) -> Decimal:
 
         # Calcola total_gain_margin
-        total_gain_margin = (
-            self.capital_gains_report.summary["total_gain"] 
-            + self.margin_trading_report.totals["gains"] 
-            - self.margin_trading_report.totals["losses"]
+        total_gain_with_margin = (
+            calc_cgt.summary["total_gain"] 
+            + calc_margin_trading.totals["gains"] 
+            - calc_margin_trading.totals["losses"]
         )
 
         if config.debug:
-            print(f"Total Gain Margin for {tax_year}: {total_gain_margin}")
+            print(f"Total Gain Margin for {tax_year}: {total_gain_with_margin}")
 
-        return total_gain_margin
+        return total_gain_with_margin
 
     @staticmethod
     def calcola_sanzione_imposta_dovuta(
