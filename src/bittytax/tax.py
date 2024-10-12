@@ -921,7 +921,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         self.yearly_holdings_report = yearly_holdings_report
         tqdm.write("Yearly report saved to self.yearly_holdings_report.")
 
-    def calcola_interessi_mora(self, importo_dovuto, data_scadenza, data_pagamento) -> Decimal:
+    def calcola_interessi_mora(self, importo_dovuto, data_scadenza, data_pagamento) -> dict:
         tassi_interessi = [
             (date(2016, 1, 1), date(2016, 12, 31), Decimal('0.002')),
             (date(2017, 1, 1), date(2017, 12, 31), Decimal('0.001')),
@@ -937,6 +937,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         interessi = Decimal('0.00')
         data_inizio = data_scadenza
         data_fine = data_pagamento
+        dettagli_calcolo = []
 
         if config.debug:
             print(f"Calcolo interessi per importo dovuto: {importo_dovuto}")
@@ -951,74 +952,88 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 giorni = (periodo_fine - periodo_inizio).days
                 interessi_annui = (importo_dovuto * tasso * giorni) / Decimal('365')
                 interessi += interessi_annui
+                descrizione = (
+                    f"Periodo: {periodo_inizio} - {periodo_fine}, Giorni: {giorni}, "
+                    f"Tasso: {tasso}, Interessi: {interessi_annui}"
+                )
+                dettagli_calcolo.append(descrizione)
 
                 if config.debug:
-                    print(f"Periodo: {periodo_inizio} - {periodo_fine}, Giorni: {giorni}, Tasso: {tasso}")
-                    print(f"Interessi per questo periodo: {interessi_annui}")
+                    print(descrizione)
 
         interessi = interessi.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
         if config.debug:
             print(f"Interessi totali calcolati: {interessi}")
 
-        return interessi
+        return {
+            'interessi': interessi,
+            'dettagli': dettagli_calcolo
+        }
 
-
-    def calcola_sanzione_imposta_dovuta(
-        self,
-        imposta_dovuta: Decimal,
-        tax_year: int,
-        data_pagamento: date = None,
-    ) -> dict:
+    def calcola_sanzione_imposta_dovuta(self, imposta_dovuta: Decimal, tax_year: int, data_pagamento: date = None) -> dict:
         if not isinstance(imposta_dovuta, Decimal):
             raise TypeError(f"Expected imposta_dovuta to be of type Decimal, but got {type(imposta_dovuta)}")
         if imposta_dovuta <= 0:
             return {
                 'sanzione': Decimal('0.00'),
                 'interessi_di_mora': Decimal('0.00'),
-                'totale': Decimal('0.00')
+                'totale': Decimal('0.00'),
+                'dettagli_calcolo_interessi': [],
+                'dettagli_calcolo_sanzione': []
             }
 
-        # Data di scadenza da definire correttamente
-        data_scadenza = date(tax_year + 1, 6, 30)  # Esempio: 30 giugno dell'anno successivo
+        data_scadenza = date(tax_year + 1, 6, 30)
         if data_pagamento is None:
             data_pagamento = datetime.now().date()
 
         giorni_ritardo = max((data_pagamento - data_scadenza).days, 0)
+        dettagli_calcolo_sanzione = []
 
         if config.debug:
             print(f"Data scadenza: {data_scadenza}, Data pagamento: {data_pagamento}, Giorni ritardo: {giorni_ritardo}")
 
-        # Calcolo della sanzione per imposta_dovuta
         sanzione_base = imposta_dovuta * Decimal('0.30')
         if giorni_ritardo <= 14:
             sanzione = imposta_dovuta * Decimal('0.001') * giorni_ritardo
+            descrizione = f"Giorni: {giorni_ritardo}, Tasso giornaliero: 0.1%, Sanzione calcolata: {sanzione}"
         elif giorni_ritardo <= 30:
             sanzione = sanzione_base * Decimal('0.1')
+            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 10%, Sanzione calcolata: {sanzione}"
         elif giorni_ritardo <= 90:
             sanzione = sanzione_base * (Decimal('1') / Decimal('9'))
+            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/9, Sanzione calcolata: {sanzione}"
         elif giorni_ritardo <= 365:
             sanzione = sanzione_base * (Decimal('1') / Decimal('8'))
+            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/8, Sanzione calcolata: {sanzione}"
         elif giorni_ritardo <= 730:
             sanzione = sanzione_base * (Decimal('1') / Decimal('7'))
+            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/7, Sanzione calcolata: {sanzione}"
         else:
             sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
+            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/6, Sanzione calcolata: {sanzione}"
+
+        dettagli_calcolo_sanzione.append(descrizione)
 
         if config.debug:
             print(f"Sanzione base: {sanzione_base}, Sanzione calcolata: {sanzione}")
+            print(descrizione)
 
-        # Calcolo degli interessi di mora
-        interessi = self.calcola_interessi_mora(imposta_dovuta, data_scadenza, data_pagamento)
+        interessi_mora = self.calcola_interessi_mora(imposta_dovuta, data_scadenza, data_pagamento)
 
         if config.debug:
-            print(f"Interessi di mora calcolati: {interessi}")
+            print(f"Interessi di mora calcolati: {interessi_mora['interessi']}")
+            for dettaglio in interessi_mora['dettagli']:
+                print(dettaglio)
 
-        totale = sanzione + interessi
+        totale = sanzione + interessi_mora['interessi']
 
         return {
             'sanzione': sanzione.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
-            'interessi_di_mora': interessi.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
-            'totale': totale.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            'interessi_di_mora': interessi_mora['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'totale': totale.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'dettagli_calcolo_interessi': interessi_mora['dettagli'],
+            'dettagli_calcolo_sanzione': dettagli_calcolo_sanzione
         }
 
     def calcola_sanzione_valore_attivita_estere(
@@ -1034,43 +1049,55 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             return {
                 'sanzione': Decimal('0.00'),
                 'interessi_di_mora': Decimal('0.00'),
-                'totale': Decimal('0.00')
+                'totale': Decimal('0.00'),
+                'dettagli_calcolo_interessi': [],
+                'dettagli_calcolo_sanzione': []
             }
         if data_pagamento is None:
             data_pagamento = datetime.now().date()
 
         giorni_ritardo = max((data_pagamento - data_scadenza).days, 0)
+        dettagli_calcolo_sanzione = []
 
         if config.debug:
             print(f"Data scadenza: {data_scadenza}, Data pagamento: {data_pagamento}, Giorni ritardo: {giorni_ritardo}")
 
-        # Calcolo della sanzione per valore_attivita_estere
         percentuale_sanzione = Decimal('0.06') if paese_black_list else Decimal('0.03')
         sanzione_base = valore_attivita_estere * percentuale_sanzione
         if giorni_ritardo <= 90:
             sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
+            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/6, Sanzione calcolata: {sanzione}"
         elif giorni_ritardo <= 365:
             sanzione = sanzione_base * (Decimal('1') / Decimal('5'))
+            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/5, Sanzione calcolata: {sanzione}"
         elif giorni_ritardo <= 730:
             sanzione = sanzione_base * (Decimal('1') / Decimal('4'))
+            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/4, Sanzione calcolata: {sanzione}"
         else:
             sanzione = sanzione_base * (Decimal('1') / Decimal('3'))
+            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/3, Sanzione calcolata: {sanzione}"
+
+        dettagli_calcolo_sanzione.append(descrizione)
 
         if config.debug:
             print(f"Sanzione base: {sanzione_base}, Sanzione calcolata: {sanzione}")
+            print(descrizione)
 
-        # Calcolo degli interessi di mora
-        interessi = self.calcola_interessi_mora(valore_attivita_estere, data_scadenza, data_pagamento)
+        interessi_mora = self.calcola_interessi_mora(valore_attivita_estere, data_scadenza, data_pagamento)
 
         if config.debug:
-            print(f"Interessi di mora calcolati: {interessi}")
+            print(f"Interessi di mora calcolati: {interessi_mora['interessi']}")
+            for dettaglio in interessi_mora['dettagli']:
+                print(dettaglio)
 
-        totale = sanzione + interessi
+        totale = sanzione + interessi_mora['interessi']
 
         return {
             'sanzione': sanzione.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
-            'interessi_di_mora': interessi.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
-            'totale': totale.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            'interessi_di_mora': interessi_mora['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'totale': totale.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'dettagli_calcolo_interessi': interessi_mora['dettagli'],
+            'dettagli_calcolo_sanzione': dettagli_calcolo_sanzione
         }
 
 
