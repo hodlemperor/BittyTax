@@ -921,10 +921,12 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
     def calcola_sanzione_imposta_dovuta(
         self,
         imposta_dovuta: Decimal,
-        data_scadenza: date,
+        tax_year: date,
     ) -> dict:
         if not isinstance(imposta_dovuta, Decimal):
             raise TypeError(f"Expected imposta_dovuta to be of type Decimal, but got {type(imposta_dovuta)}")
+
+        data_scadenza = date(tax_year, 12, 31)  # Sostituisci con la data di scadenza corretta
 
         giorni_ritardo = max((datetime.now().date() - data_scadenza).days, 0)
 
@@ -972,8 +974,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         }
 
     def calcola_sanzione_valore_attivita_estere(
+        self,
         valore_attivita_estere: Decimal,
-        tax_year: date,
+        data_scadenza: date,
         paese_black_list: bool,
     ) -> dict:
         if not isinstance(valore_attivita_estere, Decimal):
@@ -991,8 +994,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             (2023, 2023): Decimal('0.05'),
             (2024, 9999): Decimal('0.025')  # Per il 2024 e oltre
         }
-
-        data_scadenza = date(tax_year, 12, 31)  # Sostituisci con la data di scadenza corretta
 
         giorni_ritardo = max((datetime.now().date() - data_scadenza).days, 0)
 
