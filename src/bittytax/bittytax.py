@@ -330,10 +330,16 @@ def _do_each_tax_year(
         calc_cgt = tax.calculate_capital_gains(tax_year)
         calc_income = tax.calculate_income(tax_year)
         calc_margin_trading = tax.calculate_margin_trading(tax_year)
+
+        # Somma i totali di Capital Gains e Margin Trading
+        combined_total = calc_cgt.total_gain + calc_margin_trading.totals["net_total"]
+        print(f"Combined Total (Capital Gains + Margin Trading Net Total): {combined_total}")
+
         tax.tax_report[tax_year] = {
             "CapitalGains": calc_cgt,
             "Income": calc_income,
             "MarginTrading": calc_margin_trading,
+            "CombinedTotal": combined_total  # Aggiungi il totale combinato al report
         }
 
         if not summary_only:
@@ -350,10 +356,16 @@ def _do_each_tax_year(
                 calc_cgt = tax.calculate_capital_gains(year)
                 calc_income = tax.calculate_income(year)
                 calc_margin_trading = tax.calculate_margin_trading(year)
+
+                # Somma i totali per ogni anno
+                combined_total = calc_cgt.total_gain + calc_margin_trading.totals["net_total"]
+                print(f"Combined Total for {year} (Capital Gains + Margin Trading): {combined_total}")
+
                 tax.tax_report[year] = {
                     "CapitalGains": calc_cgt,
                     "Income": calc_income,
                     "MarginTrading": calc_margin_trading,
+                    "CombinedTotal": combined_total  # Aggiungi il totale combinato al report per ogni anno
                 }
 
             else:
