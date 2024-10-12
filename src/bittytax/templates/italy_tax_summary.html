@@ -164,9 +164,9 @@
 <table class="total-table">
     <tr>
         <td align="left"><strong>Total</strong></td>
-        <td>₿{{ daily_holdings_report[tax_year].get(tax_year ~ "-01-01", {}).get("btc_balance", "N/A") }}</td>
-        <td>₿{{ daily_holdings_report[tax_year].get(tax_year ~ "-12-31", {}).get("btc_balance", "N/A") }}</td>
-        <td>₿{{ daily_holdings_report[tax_year]['average']['average_btc_balance'] | format_decimal }}</td>
+        <td align="right">btc{{ daily_holdings_report[tax_year].get(tax_year ~ "-01-01", {}).get("btc_balance", "N/A") }}</td>
+        <td align="right">btc{{ daily_holdings_report[tax_year].get(tax_year ~ "-12-31", {}).get("btc_balance", "N/A") }}</td>
+        <td align="right">btc{{ daily_holdings_report[tax_year]['average']['average_btc_balance'] | format_decimal }}</td>
         <td></td>
         <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_start_of_year | valuefilter }}</strong></td>
         <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_at_end_of_year | valuefilter }}</strong></td>
@@ -233,8 +233,11 @@
 
 <pdf:nextpage />
 
+    {% endif %}
+{% endfor %}
+
 <h2>Riepilogo Totale da Pagare per Anno</h2>
-<table width="100%" class="total-summary-table">
+<table width="100%" class="asset-table">
     <tr>
         <th align="left">Anno</th>
         <th align="right">Imposte 26%</th>
@@ -242,6 +245,11 @@
         <th align="right">Sanzione (RW)</th>
         <th align="right">Totale da Pagare</th>
     </tr>
+    {% set total_taxes_sum = 0 %}
+    {% set total_sanzione_cg_sum = 0 %}
+    {% set total_sanzione_rw_sum = 0 %}
+    {% set total_due_sum = 0 %}
+
     {% for tax_year in tax_report|sort %}
     {% if tax_year in yearly_holdings_report %}
     {% set combined_total = tax_report[tax_year]['CombinedTotal'] %}
@@ -249,6 +257,12 @@
     {% set sanzione_cg = tax_report[tax_year]['SanzioneImposta'].totale %}
     {% set sanzione_rw = yearly_holdings_report[tax_year].totals.penalty_due_rw.totale %}
     {% set total_due = total_taxes + sanzione_cg + sanzione_rw %}
+
+    <!-- Aggiunta ai totali -->
+    {% set total_taxes_sum = total_taxes_sum + total_taxes %}
+    {% set total_sanzione_cg_sum = total_sanzione_cg_sum + sanzione_cg %}
+    {% set total_sanzione_rw_sum = total_sanzione_rw_sum + sanzione_rw %}
+    {% set total_due_sum = total_due_sum + total_due %}
 
     <tr>
         <td align="left">{{ config.format_tax_year(tax_year) }}</td>
@@ -261,8 +275,13 @@
     {% endfor %}
 </table>
 
-<pdf:nextpage />
-
-    {% endif %}
-{% endfor %}
-
+<!-- Tabella Totale -->
+<table class="total-table">
+    <tr>
+        <td align="left"><strong>Totale</strong></td>
+        <td align="right"><strong>{{ total_taxes_sum | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ total_sanzione_cg_sum | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ total_sanzione_rw_sum | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ total_due_sum | valuefilter }}</strong></td>
+    </tr>
+</table>
