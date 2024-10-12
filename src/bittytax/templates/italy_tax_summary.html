@@ -248,10 +248,13 @@
         <th align="right">Sanzione (RW)</th>
         <th align="right">Totale da Pagare</th>
     </tr>
-    {% set total_taxes_sum = decimal.Decimal('0') %}
-    {% set sanzione_cg_sum = decimal.Decimal('0') %}
-    {% set sanzione_rw_sum = decimal.Decimal('0') %}
-    {% set total_due_sum = decimal.Decimal('0') %}
+    <!-- Inizializza un namespace per le somme totali -->
+    {% set ns = namespace(
+    total_taxes_sum=decimal.Decimal('0'),
+    sanzione_cg_sum=decimal.Decimal('0'),
+    sanzione_rw_sum=decimal.Decimal('0'),
+    total_due_sum=decimal.Decimal('0')
+    ) %}
     {% for tax_year in tax_report|sort %}
     {% if tax_year in yearly_holdings_report %}
     {% set combined_total = tax_report[tax_year]['CombinedTotal'] %}
@@ -260,11 +263,11 @@
     {% set sanzione_rw = yearly_holdings_report[tax_year].totals.penalty_due_rw.totale %}
     {% set total_due = total_taxes + sanzione_cg + sanzione_rw %}
 
-    <!-- Aggiorna le somme totali -->
-    {% set total_taxes_sum = total_taxes_sum + total_taxes %}
-    {% set sanzione_cg_sum = sanzione_cg_sum + sanzione_cg %}
-    {% set sanzione_rw_sum = sanzione_rw_sum + sanzione_rw %}
-    {% set total_due_sum = total_due_sum + total_due %}
+    <!-- Aggiorna le somme totali utilizzando il namespace -->
+    {% set ns.total_taxes_sum = ns.total_taxes_sum + total_taxes %}
+    {% set ns.sanzione_cg_sum = ns.sanzione_cg_sum + sanzione_cg %}
+    {% set ns.sanzione_rw_sum = ns.sanzione_rw_sum + sanzione_rw %}
+    {% set ns.total_due_sum = ns.total_due_sum + total_due %}
 
     <tr>
         <td align="left">{{ config.format_tax_year(tax_year) }}</td>
@@ -279,9 +282,10 @@
 <table class="total-table">
     <tr>
         <td align="left"><strong>Totale</strong></td>
-        <td align="right"><strong>{{ total_taxes_sum | valuefilter }}</strong></td>
-        <td align="right"><strong>{{ sanzione_cg_sum | valuefilter }}</strong></td>
-        <td align="right"><strong>{{ sanzione_rw_sum | valuefilter }}</strong></td>
-        <td align="right"><strong>{{ total_due_sum | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ ns.total_taxes_sum | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ ns.sanzione_cg_sum | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ ns.sanzione_rw_sum | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ ns.total_due_sum | valuefilter }}</strong></td>
     </tr>
 </table>
+
