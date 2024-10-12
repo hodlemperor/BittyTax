@@ -895,6 +895,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             scadenza = date(year, 6, 30)  # Data di scadenza impostata al 30 giugno
 
             # Calcola la sanzione utilizzando la data di scadenza corretta
+            if config.debug:
+                print(f"Calcolo sanzione RW per anno {year}, data di scadenza: {scadenza}, valore_attivita_estere={total_value_in_fiat} ")
+
             penalty_due_rw = self.calcola_sanzione_valore_attivita_estere(
 	            valore_attivita_estere=total_value_in_fiat,
 	            data_scadenza=scadenza,
