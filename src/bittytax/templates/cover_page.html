@@ -4,6 +4,7 @@
     <h2>US Individual Tax Rules</h2>
     <p><strong>Calculation Method Used:</strong> {{ config.matching_method }}</p>
     <p><strong>Crypto2crypto tassate:</strong> {{ config.is_crypto2crypto_taxable }}</p>
+    <p><strong>Crypto2crypto prima del 2023 tassate:</strong> {{ config.is_crypto2crypto_taxable_before_2023 }}</p>
     {% if args.tax_year %}
     <h3>Tax Year: {{config.format_tax_year(args.tax_year)}}</h3>
     {% else %}
