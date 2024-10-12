@@ -918,7 +918,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         self.yearly_holdings_report = yearly_holdings_report
         tqdm.write("Yearly report saved to self.yearly_holdings_report.")
 
-
     def calcola_interessi_mora(self, importo_dovuto, data_scadenza, data_pagamento) -> Decimal:
         tassi_interessi = [
             (date(2016, 1, 1), date(2016, 12, 31), Decimal('0.002')),
@@ -936,6 +935,10 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         data_inizio = data_scadenza
         data_fine = data_pagamento
 
+        if config.debug:
+            print(f"Calcolo interessi per importo dovuto: {importo_dovuto}")
+            print(f"Data scadenza: {data_scadenza}, Data pagamento: {data_pagamento}")
+
         for inizio, fine, tasso in tassi_interessi:
             if data_inizio >= data_fine:
                 break
@@ -946,7 +949,11 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 interessi_annui = (importo_dovuto * tasso * giorni) / Decimal('365')
                 interessi += interessi_annui
 
-        return interessi.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                if config.debug:
+                    print(f"Periodo: {periodo_inizio} - {periodo_fine}, Giorni: {giorni}, Tasso: {tasso}")
+                    print(f"Interessi per questo periodo: {interessi_annui}")
+
+        interessi = in
 
     def calcola_sanzione_imposta_dovuta(
         self,
@@ -970,6 +977,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         giorni_ritardo = max((data_pagamento - data_scadenza).days, 0)
 
+        if config.debug:
+            print(f"Data scadenza: {data_scadenza}, Data pagamento: {data_pagamento}, Giorni ritardo: {giorni_ritardo}")
+
         # Calcolo della sanzione per imposta_dovuta
         sanzione_base = imposta_dovuta * Decimal('0.30')
         if giorni_ritardo <= 14:
@@ -985,8 +995,14 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         else:
             sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
 
+        if config.debug:
+            print(f"Sanzione base: {sanzione_base}, Sanzione calcolata: {sanzione}")
+
         # Calcolo degli interessi di mora
         interessi = self.calcola_interessi_mora(imposta_dovuta, data_scadenza, data_pagamento)
+
+        if config.debug:
+            print(f"Interessi di mora calcolati: {interessi}")
 
         totale = sanzione + interessi
 
@@ -1004,7 +1020,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         data_pagamento: date = None,
     ) -> dict:
         if not isinstance(valore_attivita_estere, Decimal):
-            TypeError(f"Expected valore_attivita_estere to be of type Decimal, but got {type(valore_attivita_estere)}")
+            raise TypeError(f"Expected valore_attivita_estere to be of type Decimal, but got {type(valore_attivita_estere)}")
         if valore_attivita_estere <= 0:
             return {
                 'sanzione': Decimal('0.00'),
@@ -1015,6 +1031,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             data_pagamento = datetime.now().date()
 
         giorni_ritardo = max((data_pagamento - data_scadenza).days, 0)
+
+        if config.debug:
+            print(f"Data scadenza: {data_scadenza}, Data pagamento: {data_pagamento}, Giorni ritardo: {giorni_ritardo}")
 
         # Calcolo della sanzione per valore_attivita_estere
         percentuale_sanzione = Decimal('0.06') if paese_black_list else Decimal('0.03')
@@ -1028,8 +1047,14 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         else:
             sanzione = sanzione_base * (Decimal('1') / Decimal('3'))
 
+        if config.debug:
+            print(f"Sanzione base: {sanzione_base}, Sanzione calcolata: {sanzione}")
+
         # Calcolo degli interessi di mora
         interessi = self.calcola_interessi_mora(valore_attivita_estere, data_scadenza, data_pagamento)
+
+        if config.debug:
+            print(f"Interessi di mora calcolati: {interessi}")
 
         totale = sanzione + interessi
 
