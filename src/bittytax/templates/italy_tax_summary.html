@@ -58,11 +58,7 @@
         <td align="left">{{ cgains.total_proceeds | valuefilter }}</td>
         <td align="left">{{ cgains.total_cost | valuefilter }}</td>
 
-        {% if yearly_holdings_report[tax_year].totals.total_gain_margin >= 0 %}
         <td align="right"></td>
-        {% else %}
-        <td align="right" class="red-font"></td>
-        {% endif %}
 
         <td align="right"></td>
         <td align="right"></td>
