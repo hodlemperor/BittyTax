@@ -37,12 +37,15 @@
     </ul>
 </p>
 
+<pdf:nextpage />
 
 {% for tax_year in tax_report|sort %}
     {% if tax_year in yearly_holdings_report %}
         {% set cgains = tax_report[tax_year]['CapitalGains'] %}
         {% set margin = tax_report[tax_year]['MarginTrading'] %}
         {% set combined_total = tax_report[tax_year]['CombinedTotal'] %}
+        {% set sanzione_imposta = tax_report[tax_year]['SanzioneImposta'] %}
+
 
 <h2 style="text-align: center;">{{ config.format_tax_year(tax_year) }}</h2>
 
@@ -66,7 +69,7 @@
         {% endif %}
 
         <td align="right">{{ (combined_total * decimal.Decimal('0.26')) | valuefilter }}</td>
-        <td align="right"></td>
+        <td align="right">{{ sanzione_imposta.totale | valuefilter }}</td>
     </tr>
 </table>
 
@@ -169,6 +172,31 @@
         {% endif %}
     </tr>
 </table>
+
+<pdf:nextpage />
+
+<h3>Sanzioni</h3>
+<table width="100%" class="asset-table">
+    <tr>
+        <th align="left">Tipo di Sanzione</th>
+        <th align="right">Importo</th>
+        <th align="right">Interessi di Mora</th> <!-- Nuova colonna -->
+        <th align="right">Totale</th> <!-- Nuova colonna per il totale -->
+    </tr>
+    <tr>
+        <td align="left">Capital Gain Non Dichiarato</td>
+        <td align="right">{{ sanzione_imposta.sanzione | default(0) | valuefilter }}</td>
+        <td align="right">{{ sanzione_imposta.interessi_di_mora | default(0) | valuefilter }}</td>
+        <td align="right">{{ sanzione_imposta.totale | default(0) | valuefilter }}</td>
+    </tr>
+    <tr>
+        <td align="left">Detenzione all'Estero Non Dichiarata (Quadro RW)</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.sanzione | default(0) | valuefilter }}</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.interessi_di_mora | default(0) | valuefilter }}</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.totale | default(0) | valuefilter }}</td>
+    </tr>
+</table>
+
 
     {% endif %}
 {% endfor %}
