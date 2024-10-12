@@ -77,6 +77,7 @@ class YearlyReportAsset(TypedDict):
 
 class YearlyReportTotal(TypedDict):
     total_value_in_fiat_at_end_of_year: Decimal
+    total_value_in_fiat_start_of_year: Decimal
 
 class YearlyReportRecord(TypedDict):
     assets: Dict[AssetSymbol, YearlyReportAsset]
@@ -1284,6 +1285,9 @@ class CalculateCapitalGains:
         }
         self.non_tax_by_type: Dict[str, List[TaxEventNoGainNoLoss]] = {}
         self.non_tax_by_type_total: Dict[str, CapitalGainsReportTotal] = {}
+        self.total_proceeds = Decimal(0)
+        self.total_cost = Decimal(0)
+        self.total_gain = Decimal(0)
 
     def get_proceeds_limit(self, tax_year: Year) -> Decimal:
         if "proceeds_limit" in self.CG_DATA_INDIVIDUAL[tax_year]:
@@ -1328,6 +1332,10 @@ class CalculateCapitalGains:
             self.long_term_totals["gain"] += te.gain
         else:
             raise RuntimeError("Unexpected disposal_type")
+
+        total_proceeds = self.short_term_totals["proceeds"] + self.long_term_totals["proceeds"]
+        total_cost = self.short_term_totals["cost"] + self.long_term_totals["cost"]
+        total_gain = self.short_term_totals["gain"] + self.long_term_totals["gain"]
 
     def non_tax_summary(self, te: TaxEventNoGainNoLoss) -> None:
         if te.t_type.value not in self.non_tax_by_type:
@@ -1441,6 +1449,7 @@ class CalculateMarginTrading:
             "gains": Decimal(0),
             "losses": Decimal(0),
             "fees": Decimal(0),
+            "net_total": Decimal(0) 
         }
         self.contracts: Dict[Tuple[Wallet, Note], List[TaxEventMarginTrade]] = {}
         self.contract_totals: Dict[Tuple[Wallet, Note], MarginReportTotal] = {}
@@ -1449,6 +1458,7 @@ class CalculateMarginTrading:
         self.totals["gains"] += te.gain
         self.totals["losses"] += te.loss
         self.totals["fees"] += te.fee
+        self.totals["net_total"] += te.gain - te.loss
 
         if (te.wallet, te.note) not in self.contracts:
             self.contracts[(te.wallet, te.note)] = []
@@ -1463,11 +1473,13 @@ class CalculateMarginTrading:
                         "gains": te.gain,
                         "losses": te.loss,
                         "fees": te.fee,
+                        "net_total": te.gain - te.loss
                     }
                 else:
                     self.contract_totals[(wallet, note)]["gains"] += te.gain
                     self.contract_totals[(wallet, note)]["losses"] += te.loss
                     self.contract_totals[(wallet, note)]["fees"] += te.fee
+                    self.contract_totals[(wallet, note)]["net_total"] += te.gain - te.loss
 
                 if config.debug:
                     print(f"{Fore.GREEN}margin: {te.t}")
@@ -1478,4 +1490,5 @@ class CalculateMarginTrading:
             f'{wallet} {note}: gains={config.sym()}{self.contract_totals[(wallet, note)]["gains"]} '
             f'losses={config.sym()}{self.contract_totals[(wallet, note)]["losses"]} '
             f'fess={config.sym()}{self.contract_totals[(wallet, note)]["fees"]} '
-        )
+            f'net_total={config.sym()}{self.totals["net_total"]} '
+    )
