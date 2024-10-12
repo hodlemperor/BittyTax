@@ -164,9 +164,9 @@
 <table class="total-table">
     <tr>
         <td align="left"><strong>Total</strong></td>
-        <td></td>
-        <td></td>
-        <td></td>
+        <td>{{ daily_holdings_report[tax_year]["2023-01-01"]["btc_balance"] }}</td>
+        <td>{{ daily_holdings_report[tax_year]["2023-12-31"]["btc_balance"] }}</td>
+        <td>{{ daily_holdings_report[tax_year]['average']['average_btc_balance'] | format_decimal }} ₿</td>
         <td></td>
         <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_start_of_year | valuefilter }}</strong></td>
         <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_at_end_of_year | valuefilter }}</strong></td>
