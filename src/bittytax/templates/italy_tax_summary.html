@@ -198,35 +198,38 @@
     </tr>
 </table>
 
+<br>
+
 <!-- Dettagli Calcolo Sanzione per Capital Gain Non Dichiarato -->
-<h4>Dettagli Calcolo per Capital Gain Non Dichiarato</h4>
-<p><strong>Dettaglio Calcolo Sanzione:</strong></p>
+<h4 style="font-size: 0.8em;">Dettagli Calcolo per Capital Gain Non Dichiarato</h4>
+<p style="font-size: 0.8em;"><strong>Dettaglio Calcolo Sanzione:</strong></p>
 <ul>
     {% for dettaglio in sanzione_imposta.dettagli_calcolo_sanzione %}
-    <li>{{ dettaglio }}</li>
+    <li style="font-size: 0.8em;">{{ dettaglio }}</li>
     {% endfor %}
 </ul>
-<p><strong>Dettaglio Calcolo Interessi di Mora:</strong></p>
+<p style="font-size: 0.8em;"><strong>Dettaglio Calcolo Interessi di Mora:</strong></p>
 <ul>
     {% for dettaglio in sanzione_imposta.dettagli_calcolo_interessi %}
-    <li>{{ dettaglio }}</li>
+    <li style="font-size: 0.8em;">{{ dettaglio }}</li>
     {% endfor %}
 </ul>
 
 <!-- Dettagli Calcolo Sanzione per Detenzione all'Estero Non Dichiarata -->
-<h4>Dettagli Calcolo per Detenzione all'Estero Non Dichiarata (Quadro RW)</h4>
-<p><strong>Dettaglio Calcolo Sanzione:</strong></p>
+<h4 style="font-size: 0.8em;">Dettagli Calcolo per Detenzione all'Estero Non Dichiarata (Quadro RW)</h4>
+<p style="font-size: 0.8em;"><strong>Dettaglio Calcolo Sanzione:</strong></p>
 <ul>
     {% for dettaglio in yearly_holdings_report[tax_year].totals.penalty_due_rw.dettagli_calcolo_sanzione %}
-    <li>{{ dettaglio }}</li>
+    <li style="font-size: 0.8em;">{{ dettaglio }}</li>
     {% endfor %}
 </ul>
-<p><strong>Dettaglio Calcolo Interessi di Mora:</strong></p>
+<p style="font-size: 0.8em;"><strong>Dettaglio Calcolo Interessi di Mora:</strong></p>
 <ul>
     {% for dettaglio in yearly_holdings_report[tax_year].totals.penalty_due_rw.dettagli_calcolo_interessi %}
-    <li>{{ dettaglio }}</li>
+    <li style="font-size: 0.8em;">{{ dettaglio }}</li>
     {% endfor %}
 </ul>
+
 
 <pdf:nextpage />
 
