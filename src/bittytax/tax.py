@@ -1336,6 +1336,8 @@ class CalculateCapitalGains:
         total_proceeds = self.short_term_totals["proceeds"] + self.long_term_totals["proceeds"]
         total_cost = self.short_term_totals["cost"] + self.long_term_totals["cost"]
         total_gain = self.short_term_totals["gain"] + self.long_term_totals["gain"]
+        if config.debug:
+            print (f"Total Proceeds: {total_proceeds}, Total Cost: {total_cost}, Total Gain: {total_gain}")
 
     def non_tax_summary(self, te: TaxEventNoGainNoLoss) -> None:
         if te.t_type.value not in self.non_tax_by_type:
