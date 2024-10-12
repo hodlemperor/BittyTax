@@ -228,7 +228,35 @@
     {% endfor %}
 </ul>
 
+<pdf:nextpage />
 
+<h2>Riepilogo Totale da Pagare per Anno</h2>
+<table width="100%" class="total-summary-table">
+    <tr>
+        <th align="left">Anno</th>
+        <th align="right">Imposte 26%</th>
+        <th align="right">Sanzione CG Non Dichiarato</th>
+        <th align="right">Sanzione (RW)</th>
+        <th align="right">Totale da Pagare</th>
+    </tr>
+    {% for tax_year in tax_report|sort %}
+    {% if tax_year in yearly_holdings_report %}
+    {% set combined_total = tax_report[tax_year]['CombinedTotal'] %}
+    {% set total_taxes = combined_total * decimal.Decimal('0.26') %}
+    {% set sanzione_cg = tax_report[tax_year]['SanzioneImposta'].totale %}
+    {% set sanzione_rw = yearly_holdings_report[tax_year].totals.penalty_due_rw.totale %}
+    {% set total_due = total_taxes + sanzione_cg + sanzione_rw %}
+
+    <tr>
+        <td align="left">{{ config.format_tax_year(tax_year) }}</td>
+        <td align="right">{{ total_taxes | valuefilter }}</td>
+        <td align="right">{{ sanzione_cg | valuefilter }}</td>
+        <td align="right">{{ sanzione_rw | valuefilter }}</td>
+        <td align="right"><strong>{{ total_due | valuefilter }}</strong></td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+</table>
 
 <pdf:nextpage />
 
