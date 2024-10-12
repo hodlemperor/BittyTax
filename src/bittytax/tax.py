@@ -996,22 +996,22 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         sanzione_base = imposta_dovuta * Decimal('0.30')
         if giorni_ritardo <= 14:
             sanzione = imposta_dovuta * Decimal('0.001') * giorni_ritardo
-            descrizione = f"Giorni: {giorni_ritardo}, Tasso giornaliero: 0.1%, Sanzione calcolata: {sanzione}"
+            descrizione = f"Importo: Imposta dovuta {imposta_dovuta}, Giorni: {giorni_ritardo}, Tasso giornaliero: 0.1%, Sanzione calcolata: {sanzione}"
         elif giorni_ritardo <= 30:
             sanzione = sanzione_base * Decimal('0.1')
-            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 10%, Sanzione calcolata: {sanzione}"
+            descrizione = f"Importo: Imposta dovuta {imposta_dovuta}, Giorni: {giorni_ritardo}, Tasso base: 10%, Sanzione calcolata: {sanzione}"
         elif giorni_ritardo <= 90:
             sanzione = sanzione_base * (Decimal('1') / Decimal('9'))
-            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/9, Sanzione calcolata: {sanzione}"
+            descrizione = f"Importo: Imposta dovuta {imposta_dovuta}, Giorni: {giorni_ritardo}, Tasso base: 1/9, Sanzione calcolata: {sanzione}"
         elif giorni_ritardo <= 365:
             sanzione = sanzione_base * (Decimal('1') / Decimal('8'))
-            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/8, Sanzione calcolata: {sanzione}"
+            descrizione = f"Importo: Imposta dovuta {imposta_dovuta}, Giorni: {giorni_ritardo}, Tasso base: 1/8, Sanzione calcolata: {sanzione}"
         elif giorni_ritardo <= 730:
             sanzione = sanzione_base * (Decimal('1') / Decimal('7'))
-            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/7, Sanzione calcolata: {sanzione}"
+            descrizione = f"Importo: Imposta dovuta {imposta_dovuta}, Giorni: {giorni_ritardo}, Tasso base: 1/7, Sanzione calcolata: {sanzione}"
         else:
             sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
-            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/6, Sanzione calcolata: {sanzione}"
+            descrizione = f"Importo: Imposta dovuta {imposta_dovuta}, Giorni: {giorni_ritardo}, Tasso base: 1/6, Sanzione calcolata: {sanzione}"
 
         dettagli_calcolo_sanzione.append(descrizione)
 
@@ -1066,16 +1066,16 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         sanzione_base = valore_attivita_estere * percentuale_sanzione
         if giorni_ritardo <= 90:
             sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
-            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/6, Sanzione calcolata: {sanzione}"
+            descrizione = f"Importo: Valore attività estere {valore_attivita_estere}, Giorni: {giorni_ritardo}, Tasso base: 1/6, Sanzione calcolata: {sanzione}"
         elif giorni_ritardo <= 365:
             sanzione = sanzione_base * (Decimal('1') / Decimal('5'))
-            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/5, Sanzione calcolata: {sanzione}"
+            descrizione = f"Importo: Valore attività estere {valore_attivita_estere}, Giorni: {giorni_ritardo}, Tasso base: 1/5, Sanzione calcolata: {sanzione}"
         elif giorni_ritardo <= 730:
             sanzione = sanzione_base * (Decimal('1') / Decimal('4'))
-            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/4, Sanzione calcolata: {sanzione}"
+            descrizione = f"Importo: Valore attività estere {valore_attivita_estere}, Giorni: {giorni_ritardo}, Tasso base: 1/4, Sanzione calcolata: {sanzione}"
         else:
             sanzione = sanzione_base * (Decimal('1') / Decimal('3'))
-            descrizione = f"Giorni: {giorni_ritardo}, Tasso base: 1/3, Sanzione calcolata: {sanzione}"
+            descrizione = f"Importo: Valore attività estere {valore_attivita_estere}, Giorni: {giorni_ritardo}, Tasso base: 1/3, Sanzione calcolata: {sanzione}"
 
         dettagli_calcolo_sanzione.append(descrizione)
 
