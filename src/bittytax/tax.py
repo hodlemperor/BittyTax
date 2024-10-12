@@ -919,6 +919,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         tqdm.write("Yearly report saved to self.yearly_holdings_report.")
 
     def calcola_sanzione_imposta_dovuta(
+        self,
         imposta_dovuta: Decimal,
         data_scadenza: date,
     ) -> dict:
