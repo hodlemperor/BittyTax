@@ -65,7 +65,7 @@
         <td align="right" class="red-font">{{ combined_total | valuefilter }}</td>
         {% endif %}
 
-        <td align="right">{{ combined_total * decimal.Decimal('0.26')) | valuefilter }}</td>
+        <td align="right">{{ (combined_total * decimal.Decimal('0.26')) | valuefilter }}</td>
         <td align="right"></td>
     </tr>
 </table>
