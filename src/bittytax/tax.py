@@ -953,7 +953,13 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     print(f"Periodo: {periodo_inizio} - {periodo_fine}, Giorni: {giorni}, Tasso: {tasso}")
                     print(f"Interessi per questo periodo: {interessi_annui}")
 
-        interessi = in
+        interessi = interessi.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+        if config.debug:
+            print(f"Interessi totali calcolati: {interessi}")
+
+        return interessi
+
 
     def calcola_sanzione_imposta_dovuta(
         self,
