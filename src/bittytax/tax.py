@@ -926,6 +926,13 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         if not isinstance(imposta_dovuta, Decimal):
             raise TypeError(f"Expected imposta_dovuta to be of type Decimal, but got {type(imposta_dovuta)}")
 
+        if imposta_dovuta <= 0:
+            return {
+                'sanzione': Decimal('0.00'),
+                'interessi_di_mora': Decimal('0.00'),
+                'totale': Decimal('0.00')
+            }
+
         data_scadenza = date(tax_year, 12, 31)  # Sostituisci con la data di scadenza corretta
 
         giorni_ritardo = max((datetime.now().date() - data_scadenza).days, 0)
@@ -981,6 +988,13 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
     ) -> dict:
         if not isinstance(valore_attivita_estere, Decimal):
             raise TypeError(f"Expected valore_attivita_estere to be of type Decimal, but got {type(valore_attivita_estere)}")
+
+        if valore_attivita_estere <= 0:
+            return {
+                'sanzione': Decimal('0.00'),
+                'interessi_di_mora': Decimal('0.00'),
+                'totale': Decimal('0.00')
+            }
 
         # Tassi di interesse per anno
         tassi_interessi = {
