@@ -273,6 +273,8 @@
     {% endif %}
 {% endfor %}
 
+{% set show_ivafe = tax_report.keys() | select('>=', 2022) | list | length > 0 %}
+
 <h2>Riepilogo Totale da Pagare per Anno</h2>
 <table width="100%" class="asset-table">
     <tr>
@@ -280,7 +282,9 @@
         <th align="right">Imposte 26%</th>
         <th align="right">Sanzione CG Non Dichiarato</th>
         <th align="right">Sanzione (RW)</th>
+        {% if show_ivafe %}
         <th align="right">Sanzione (IVAFE)</th>
+        {% endif %}
         <th align="right">Totale da Pagare</th>
     </tr>
     <!-- Inizializza un namespace per le somme totali -->
@@ -316,7 +320,7 @@
         <td align="right">{{ total_taxes | default(0) | valuefilter }}</td>
         <td align="right">{{ sanzione_cg | default(0) | valuefilter }}</td>
         <td align="right">{{ sanzione_rw | default(0) | valuefilter }}</td>
-        {% if tax_year >= 2022 %}
+        {% if show_ivafe %}
         <td align="right">{{ sanzione_ivafe | default(0) | valuefilter }}</td>
         {% endif %}
         <td align="right"><strong>{{ total_due | default(0) | valuefilter }}</strong></td>
@@ -330,7 +334,7 @@
         <td align="right"><strong>{{ ns.total_taxes_sum | default(0) | valuefilter }}</strong></td>
         <td align="right"><strong>{{ ns.sanzione_cg_sum | default(0) | valuefilter }}</strong></td>
         <td align="right"><strong>{{ ns.sanzione_rw_sum | default(0) | valuefilter }}</strong></td>
-        {% if tax_year >= 2022 %}
+        {% if show_ivafe %}
         <td align="right"><strong>{{ ns.sanzione_ivafe_sum | default(0) | valuefilter }}</strong></td>
         {% endif %}
         <td align="right"><strong>{{ ns.total_due_sum | default(0) | valuefilter }}</strong></td>
