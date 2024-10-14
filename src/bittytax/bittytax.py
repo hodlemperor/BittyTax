@@ -379,7 +379,7 @@ def _do_each_tax_year(
 
                 sanzione_imposta = tax.calcola_sanzione_capital_gain(imposta_dovuta, year)
 
-                tax.tax_report[tax_year] = {
+                tax.tax_report[year] = {
                     "CapitalGains": calc_cgt,
                     "Income": calc_income,
                     "MarginTrading": calc_margin_trading,
