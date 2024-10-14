@@ -71,7 +71,7 @@
         <td align="right" class="red-font">{{ combined_total | valuefilter }}</td>
         {% endif %}
 
-        <td align="right">{{ ImpostaDovuta | valuefilter }}</td>
+        <td align="right">{{ ImpostaDovuta | default(0) | valuefilter }}</td>
         <td align="right">{{ sanzione_imposta.totale | valuefilter }}</td>
     </tr>
 </table>
