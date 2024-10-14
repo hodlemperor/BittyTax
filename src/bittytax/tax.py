@@ -1007,10 +1007,13 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             raise TypeError(f"Expected imposta_dovuta to be of type Decimal, but got {type(imposta_dovuta)}")
         if imposta_dovuta <= 0:
             return {
+                'imposta': Decimal('0.00'),
                 'sanzione': Decimal('0.00'),
-                'interessi_di_mora': Decimal('0.00'),
+                'interessi_mora_imposta': Decimal('0.00'),
+                'interessi_mora_sanzione': Decimal('0.00'),
                 'totale': Decimal('0.00'),
-                'dettagli_calcolo_interessi': [],
+                'dettagli_calcolo_interessi_imposta': [],
+                'dettagli_calcolo_interessi_sanzione': [],
                 'dettagli_calcolo_sanzione': []
             }
 
@@ -1052,6 +1055,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         totale = sanzione + interessi_mora_imposta['interessi'] + interessi_mora_sanzione['interessi']
 
         return {
+            'imposta': imposta_dovuta.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             'sanzione': sanzione.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             'interessi_mora_imposta': interessi_mora_imposta['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             'interessi_mora_sanzione': interessi_mora_sanzione['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
@@ -1072,6 +1076,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             raise TypeError(f"Expected ivafe to be of type Decimal, but got {type(ivafe)}")
         if ivafe <= 0:
             return {
+                'ivafe': Decimal('0.00'),
                 'sanzione': Decimal('0.00'),
                 'interessi_di_mora': Decimal('0.00'),
                 'totale': Decimal('0.00'),
@@ -1120,6 +1125,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         totale = sanzione + interessi_mora_sanzione['interessi']
 
         return {
+            'ivafe': ivafe.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),  # 'ivafe' invece di 'sanzione'
             'sanzione': sanzione.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             'interessi_di_mora': interessi_mora_sanzione['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             'totale': totale.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
@@ -1139,6 +1145,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             raise TypeError(f"Expected valore_attivita_estere to be of type Decimal, but got {type(valore_attivita_estere)}")
         if valore_attivita_estere <= 0:
             return {
+                'valore_attivita_estere': Decimal('0.00'),
                 'sanzione': Decimal('0.00'),
                 'interessi_di_mora': Decimal('0.00'),
                 'totale': Decimal('0.00'),
@@ -1185,6 +1192,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         totale = sanzione + interessi_mora_sanzione['interessi']
 
         return {
+            'valore_attivita_estere': valore_attivita_estere.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             'sanzione': sanzione.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             'interessi_di_mora': interessi_mora_sanzione['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             'totale': totale.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
