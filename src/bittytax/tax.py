@@ -900,8 +900,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         days_held=days_held
                     )
 
-            # Calcola la data di scadenza per l'anno fiscale
-            scadenza = date(year, 6, 30)  # Data di scadenza impostata al 30 giugno
+            # Calcola la data di scadenza per l'anno fiscale  
+            scadenza = date(year + 1, 6, 30)
 
             # Calcola la sanzione utilizzando la data di scadenza corretta
             if config.debug:
@@ -1154,8 +1154,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             }
         if data_pagamento is None:
             data_pagamento = datetime.now().date()
-
-        data_scadenza = date(data_scadenza + 1)
 
         giorni_ritardo = max((data_pagamento - data_scadenza).days, 0)
         dettagli_calcolo_sanzione = []
