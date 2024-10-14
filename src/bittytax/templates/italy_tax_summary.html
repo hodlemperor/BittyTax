@@ -174,7 +174,7 @@
         <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_start_of_year | valuefilter }}</strong></td>
         <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_at_end_of_year | valuefilter }}</strong></td>
         {% if tax_year >= 2023 %}
-        <td align="right"><strong>{{ (yearly_holdings_report[tax_year].totals.ivafe | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.ivafe | valuefilter }}</strong></td>
         {% endif %}
     </tr>
 </table>
