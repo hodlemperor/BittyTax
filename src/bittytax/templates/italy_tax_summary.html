@@ -147,7 +147,7 @@
             {% if asset_data.value_in_fiat_at_end_of_year is not none %}
             <td align="right">{{ asset_data.value_in_fiat_at_end_of_year | valuefilter }}</td>
             {% if tax_year >= 2022 %}
-            <td align="right">{{ (asset_data.ivafe | valuefilter }}</td>
+            <td align="right">{{ asset_data.ivafe | valuefilter  }}</td>
             {% endif %}
             {% else %}
             <td align="right"><i>Not available</i></td>
