@@ -1078,7 +1078,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             return {
                 'ivafe': Decimal('0.00'),
                 'sanzione': Decimal('0.00'),
-                'interessi_di_mora': Decimal('0.00'),
+                'interessi_mora_ivafe': Decimal('0.00'),
+                'interessi_mora_sanzione': Decimal('0.00'),
                 'totale': Decimal('0.00'),
                 'dettagli_calcolo_interessi': [],
                 'dettagli_calcolo_sanzione': []
@@ -1111,25 +1112,20 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         dettagli_calcolo_sanzione.append(descrizione)
 
-        if config.debug:
-            print(f"Sanzione base: {sanzione_base}, Sanzione calcolata: {sanzione}")
-            print(descrizione)
+        interessi_mora_ivafe = self.calcola_interessi_mora(ivafe, data_scadenza, data_pagamento)
 
         interessi_mora_sanzione = self.calcola_interessi_mora(sanzione, data_scadenza, data_pagamento)
 
-        if config.debug:
-            print(f"Interessi di mora calcolati: {interessi_mora_sanzione['interessi']}")
-            for dettaglio in interessi_mora_sanzione['dettagli']:
-                print(dettaglio)
-
-        totale = sanzione + interessi_mora_sanzione['interessi']
+        totale = sanzione + interessi_mora_sanzione['interessi'] + interessi_mora_ivafe['interessi']
 
         return {
             'ivafe': ivafe.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),  # 'ivafe' invece di 'sanzione'
             'sanzione': sanzione.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
-            'interessi_di_mora': interessi_mora_sanzione['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'interessi_mora_sanzione': interessi_mora_sanzione['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'interessi_mora_ivafe': interessi_mora_ivafe['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             'totale': totale.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
-            'dettagli_calcolo_interessi': interessi_mora_sanzione['dettagli'],
+            'dettagli_calcolo_interessi_sanzione': interessi_mora_sanzione['dettagli'],
+            'dettagli_calcolo_interessi_ivafe': interessi_mora_ivafe['dettagli'],
             'dettagli_calcolo_sanzione': dettagli_calcolo_sanzione
         }
 

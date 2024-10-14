@@ -185,8 +185,8 @@
         <th align="left">Tipo</th>
         <th align="right">Imposta</th>
         <th align="right">Sanzione</th>
-        <th align="right">Interessi su imposta</th>
-        <th align="right">Interessi su sanzione</th>
+        <th align="right">Interessi sull' imposta</th>
+        <th align="right">Interessi sulla sanzione</th>
         <th align="right">Totale</th>
     </tr>
     <tr>
@@ -199,10 +199,10 @@
     </tr>
     <tr>
         <td align="left">Detenzione all'Estero Non Dichiarata (Quadro RW)</td>
-        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.valore_attivita_estere | default(0) | valuefilter }}</td>
+        <td align="right"></td>
         <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.sanzione | default(0) | valuefilter }}</td>
-        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.interessi_di_mora | default(0) | valuefilter }}</td>
         <td align="right"><i>Not applicable</i></td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.interessi_di_mora | default(0) | valuefilter }}</td>
         <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.totale | default(0) | valuefilter }}</td>
     </tr>
     {% if tax_year >= 2022 %}
@@ -210,8 +210,8 @@
         <td align="left">IVAFE Non Pagato</td>
         <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_ivafe.ivafe | default(0) | valuefilter }}</td>
         <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_ivafe.sanzione | default(0) | valuefilter }}</td>
-        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_ivafe.interessi_di_mora | default(0) | valuefilter }}</td>
-        <td align="right"><i>Not applicable</i></td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_ivafe.interessi_mora_ivafe | default(0) | valuefilter }}</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_ivafe.interessi_mora_sanzione | default(0) | valuefilter }}</td>
         <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_ivafe.totale | default(0) | valuefilter }}</td>
     </tr>
     {% endif %}
@@ -264,9 +264,15 @@
     <li style="font-size: 0.8em;">{{ dettaglio }}</li>
     {% endfor %}
 </ul>
-<p style="font-size: 0.8em;">Dettaglio Calcolo Interessi di Mora:</p>
+<p style="font-size: 0.8em;">Dettaglio Calcolo Interessi di Mora sull'ivafe:</p>
 <ul>
-    {% for dettaglio in yearly_holdings_report[tax_year].totals.penalty_due_ivafe.dettagli_calcolo_interessi %}
+    {% for dettaglio in yearly_holdings_report[tax_year].totals.penalty_due_ivafe.dettagli_calcolo_interessi_ivafe %}
+    <li style="font-size: 0.8em;">{{ dettaglio }}</li>
+    {% endfor %}
+</ul>
+<p style="font-size: 0.8em;">Dettaglio Calcolo Interessi di Mora sulla sanzione:</p>
+<ul>
+    {% for dettaglio in yearly_holdings_report[tax_year].totals.penalty_due_ivafe.dettagli_calcolo_interessi_sanzione %}
     <li style="font-size: 0.8em;">{{ dettaglio }}</li>
     {% endfor %}
 </ul>
