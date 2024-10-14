@@ -340,12 +340,13 @@ def _do_each_tax_year(
         paese_black_list = False  # Imposta a True se il paese è nella lista nera
 
         # Calcola la sanzione sull'imposta dovuta
-        sanzione_imposta = tax.calcola_sanzione_imposta_dovuta(imposta_dovuta, tax_year)
+        sanzione_imposta = tax.calcola_sanzione_capital_gain(imposta_dovuta, tax_year)
 
         tax.tax_report[tax_year] = {
             "CapitalGains": calc_cgt,
             "Income": calc_income,
             "MarginTrading": calc_margin_trading,
+            "ImpostaDovuta": imposta_dovuta,
             "CombinedTotal": combined_total,
             "SanzioneImposta": sanzione_imposta,
         }
@@ -376,7 +377,7 @@ def _do_each_tax_year(
                 if config.debug:
                     print(f"Calcolo sanzione CG per anno {year}, imposta_dovuta: {imposta_dovuta}")
 
-                sanzione_imposta = tax.calcola_sanzione_imposta_dovuta(imposta_dovuta, year)
+                sanzione_imposta = tax.calcola_sanzione_capital_gain(imposta_dovuta, year)
 
                 tax.tax_report[year] = {
                     "CapitalGains": calc_cgt,

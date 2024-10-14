@@ -79,6 +79,8 @@ class YearlyReportTotal(TypedDict):
     total_value_in_fiat_at_end_of_year: Decimal
     total_value_in_fiat_start_of_year: Decimal
     penalty_due_rw: Decimal
+    ivafe: Decimal
+    penalty_due_ivafe: Decimal
 
 class YearlyReportRecord(TypedDict):
     assets: Dict[AssetSymbol, YearlyReportAsset]
@@ -881,6 +883,12 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     # Add the fiat value to the annual sum
                     total_value_in_fiat += value_in_fiat
 
+                    # Calcola l'IVAFE solo se l'anno è >= 2022
+                    if year >= 2022:
+                        ivafe = value_in_fiat * Decimal('0.002')
+                    else:
+                        ivafe = Decimal('0.00')
+
                     # Save details in report
                     assets_report[h] = YearlyReportAsset(
                         quantity_start_of_year=quantity_start_of_year,
@@ -888,6 +896,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         quantity_end_of_year=quantity_end_of_year,
                         average_balance=average_balance,
                         value_in_fiat_at_end_of_year=value_in_fiat,
+                        ivafe=ivafe,
                         days_held=days_held
                     )
 
@@ -898,11 +907,31 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             if config.debug:
                 print(f"Calcolo sanzione RW per anno {year}, data di scadenza: {scadenza}, valore_attivita_estere={total_value_in_fiat} ")
 
-            penalty_due_rw = self.calcola_sanzione_valore_attivita_estere(
+            penalty_due_rw = self.calcola_sanzione_rw(
 	            valore_attivita_estere=total_value_in_fiat,
 	            data_scadenza=scadenza,
 	            paese_black_list=False,  # oppure True se pertinente
             )
+
+            # Calcola l'IVAFE solo se l'anno è >= 2022
+            if year >= 2022:
+                ivafe = total_value_in_fiat * Decimal('0.002')  # Calcolo dell'IVAFE
+
+                # Calcola la sanzione per l'IVAFE utilizzando la nuova funzione
+                penalty_due_ivafe = self.calcola_sanzione_ivafe(
+                    ivafe=ivafe,
+                    data_scadenza=scadenza,
+                    paese_black_list=False,  # oppure True se pertinente
+                )
+            else:
+                ivafe = Decimal('0.00')
+                penalty_due_ivafe = {
+                    'sanzione': Decimal('0.00'),
+                    'interessi_di_mora': Decimal('0.00'),
+                    'totale': Decimal('0.00'),
+                    'dettagli_calcolo_interessi': [],
+                    'dettagli_calcolo_sanzione': []
+                }
 
             # Save the total amount in the report
             yearly_holdings_report[year] = YearlyReportRecord(
@@ -910,7 +939,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 totals=YearlyReportTotal(
                     total_value_in_fiat_start_of_year=total_value_in_fiat_start_of_year,
                     total_value_in_fiat_at_end_of_year=total_value_in_fiat,
-                    penalty_due_rw=penalty_due_rw
+                    penalty_due_rw=penalty_due_rw,
+                    ivafe=ivafe,
+                    penalty_due_ivafe=penalty_due_ivafe,
                 )
             )
 
@@ -971,7 +1002,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             'dettagli': dettagli_calcolo
         }
 
-    def calcola_sanzione_imposta_dovuta(self, imposta_dovuta: Decimal, tax_year: int, data_pagamento: date = None) -> dict:
+    def calcola_sanzione_capital_gain(self, imposta_dovuta: Decimal, tax_year: int, data_pagamento: date = None) -> dict:
         if not isinstance(imposta_dovuta, Decimal):
             raise TypeError(f"Expected imposta_dovuta to be of type Decimal, but got {type(imposta_dovuta)}")
         if imposta_dovuta <= 0:
@@ -1015,28 +1046,89 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         dettagli_calcolo_sanzione.append(descrizione)
 
+        interessi_mora_imposta = self.calcola_interessi_mora(imposta_dovuta, data_scadenza, data_pagamento)
+        interessi_mora_sanzione = self.calcola_interessi_mora(sanzione, data_scadenza, data_pagamento)
+
+        totale = sanzione + interessi_mora_imposta['interessi'] + interessi_mora_sanzione['interessi']
+
+        return {
+            'sanzione': sanzione.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'interessi_mora_imposta': interessi_mora_imposta['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'interessi_mora_sanzione': interessi_mora_sanzione['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'totale': totale.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'dettagli_calcolo_interessi_imposta': interessi_mora_imposta['dettagli'],
+            'dettagli_calcolo_interessi_sanzione': interessi_mora_sanzione['dettagli'],
+            'dettagli_calcolo_sanzione': dettagli_calcolo_sanzione
+        }
+
+    def calcola_sanzione_ivafe(
+        self,
+        ivafe: Decimal,
+        data_scadenza: date,
+        paese_black_list: bool,
+        data_pagamento: date = None,
+    ) -> dict:
+        if not isinstance(ivafe, Decimal):
+            raise TypeError(f"Expected ivafe to be of type Decimal, but got {type(ivafe)}")
+        if ivafe <= 0:
+            return {
+                'sanzione': Decimal('0.00'),
+                'interessi_di_mora': Decimal('0.00'),
+                'totale': Decimal('0.00'),
+                'dettagli_calcolo_interessi': [],
+                'dettagli_calcolo_sanzione': []
+            }
+        if data_pagamento is None:
+            data_pagamento = datetime.now().date()
+
+        giorni_ritardo = max((data_pagamento - data_scadenza).days, 0)
+        dettagli_calcolo_sanzione = []
+
+        if config.debug:
+            print(f"Data scadenza: {data_scadenza}, Data pagamento: {data_pagamento}, Giorni ritardo: {giorni_ritardo}")
+
+        percentuale_sanzione = Decimal('0.06') if paese_black_list else Decimal('0.03')
+        sanzione_base = ivafe * percentuale_sanzione
+
+        # Definisci il tasso della sanzione in base ai giorni di ritardo
+        if giorni_ritardo <= 90:
+            sanzione = sanzione_base * (Decimal('1') / Decimal('6'))
+            descrizione = f"Importo: IVAFE {ivafe}, Giorni: {giorni_ritardo}, Tasso base: 1/6, Sanzione calcolata: {sanzione}"
+        elif giorni_ritardo <= 365:
+            sanzione = sanzione_base * (Decimal('1') / Decimal('5'))
+            descrizione = f"Importo: IVAFE {ivafe}, Giorni: {giorni_ritardo}, Tasso base: 1/5, Sanzione calcolata: {sanzione}"
+        elif giorni_ritardo <= 730:
+            sanzione = sanzione_base * (Decimal('1') / Decimal('4'))
+            descrizione = f"Importo: IVAFE {ivafe}, Giorni: {giorni_ritardo}, Tasso base: 1/4, Sanzione calcolata: {sanzione}"
+        else:
+            sanzione = sanzione_base * (Decimal('1') / Decimal('3'))
+            descrizione = f"Importo: IVAFE {ivafe}, Giorni: {giorni_ritardo}, Tasso base: 1/3, Sanzione calcolata: {sanzione}"
+
+        dettagli_calcolo_sanzione.append(descrizione)
+
         if config.debug:
             print(f"Sanzione base: {sanzione_base}, Sanzione calcolata: {sanzione}")
             print(descrizione)
 
-        interessi_mora = self.calcola_interessi_mora(imposta_dovuta, data_scadenza, data_pagamento)
+        interessi_mora_sanzione = self.calcola_interessi_mora(sanzione, data_scadenza, data_pagamento)
 
         if config.debug:
-            print(f"Interessi di mora calcolati: {interessi_mora['interessi']}")
-            for dettaglio in interessi_mora['dettagli']:
+            print(f"Interessi di mora calcolati: {interessi_mora_sanzione['interessi']}")
+            for dettaglio in interessi_mora_sanzione['dettagli']:
                 print(dettaglio)
 
-        totale = sanzione + interessi_mora['interessi']
+        totale = sanzione + interessi_mora_sanzione['interessi']
 
         return {
             'sanzione': sanzione.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
-            'interessi_di_mora': interessi_mora['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'interessi_di_mora': interessi_mora_sanzione['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             'totale': totale.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
-            'dettagli_calcolo_interessi': interessi_mora['dettagli'],
+            'dettagli_calcolo_interessi': interessi_mora_sanzione['dettagli'],
             'dettagli_calcolo_sanzione': dettagli_calcolo_sanzione
         }
 
-    def calcola_sanzione_valore_attivita_estere(
+
+    def calcola_sanzione_rw(
         self,
         valore_attivita_estere: Decimal,
         data_scadenza: date,
@@ -1083,20 +1175,20 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             print(f"Sanzione base: {sanzione_base}, Sanzione calcolata: {sanzione}")
             print(descrizione)
 
-        interessi_mora = self.calcola_interessi_mora(valore_attivita_estere, data_scadenza, data_pagamento)
+        interessi_mora_sanzione = self.calcola_interessi_mora(sanzione, data_scadenza, data_pagamento)
 
         if config.debug:
-            print(f"Interessi di mora calcolati: {interessi_mora['interessi']}")
-            for dettaglio in interessi_mora['dettagli']:
+            print(f"Interessi di mora calcolati: {interessi_mora_sanzione['interessi']}")
+            for dettaglio in interessi_mora_sanzione['dettagli']:
                 print(dettaglio)
 
-        totale = sanzione + interessi_mora['interessi']
+        totale = sanzione + interessi_mora_sanzione['interessi']
 
         return {
             'sanzione': sanzione.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
-            'interessi_di_mora': interessi_mora['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+            'interessi_di_mora': interessi_mora_sanzione['interessi'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             'totale': totale.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
-            'dettagli_calcolo_interessi': interessi_mora['dettagli'],
+            'dettagli_calcolo_interessi': interessi_mora_sanzione['dettagli'],
             'dettagli_calcolo_sanzione': dettagli_calcolo_sanzione
         }
 

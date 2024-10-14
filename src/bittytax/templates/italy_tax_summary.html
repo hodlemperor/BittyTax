@@ -71,7 +71,7 @@
         <td align="right" class="red-font">{{ combined_total | valuefilter }}</td>
         {% endif %}
 
-        <td align="right">{{ (combined_total * decimal.Decimal('0.26')) | valuefilter }}</td>
+        <td align="right">{{ ImpostaDovuta | valuefilter }}</td>
         <td align="right">{{ sanzione_imposta.totale | valuefilter }}</td>
     </tr>
 </table>
@@ -146,13 +146,13 @@
             <td align="right">{{ asset_data.value_in_fiat_start_of_year | valuefilter }}</td>
             {% if asset_data.value_in_fiat_at_end_of_year is not none %}
             <td align="right">{{ asset_data.value_in_fiat_at_end_of_year | valuefilter }}</td>
-            {% if tax_year >= 2023 %}
-            <td align="right">{{ (asset_data.value_in_fiat_at_end_of_year * decimal.Decimal('0.002')) | valuefilter }}</td>
+            {% if tax_year >= 2022 %}
+            <td align="right">{{ (asset_data.ivafe | valuefilter }}</td>
             {% endif %}
             {% else %}
             <td align="right"><i>Not available</i></td>
             <td align="right"><i>Not available</i></td>
-            {% if tax_year >= 2023 %}
+            {% if tax_year >= 2022 %}
             <td align="right"><i>Not available</i></td>
             {% endif %}
             {% endif %}
@@ -174,7 +174,7 @@
         <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_start_of_year | valuefilter }}</strong></td>
         <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_at_end_of_year | valuefilter }}</strong></td>
         {% if tax_year >= 2023 %}
-        <td align="right"><strong>{{ (yearly_holdings_report[tax_year].totals.total_value_in_fiat_at_end_of_year * decimal.Decimal('0.002')) | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ (yearly_holdings_report[tax_year].totals.ivafe | valuefilter }}</strong></td>
         {% endif %}
     </tr>
 </table>
@@ -199,6 +199,14 @@
         <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.interessi_di_mora | default(0) | valuefilter }}</td>
         <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.totale | default(0) | valuefilter }}</td>
     </tr>
+    {% if tax_year >= 2022 %}
+    <tr>
+        <td align="left">IVAFE Non Dichiarato</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_ivafe.sanzione | default(0) | valuefilter }}</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_ivafe.interessi_di_mora | default(0) | valuefilter }}</td>
+        <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_ivafe.totale | default(0) | valuefilter }}</td>
+    </tr>
+    {% endif %}
 </table>
 
 <br>
@@ -233,6 +241,22 @@
     {% endfor %}
 </ul>
 
+{% if tax_year >= 2022 %}
+<!-- Dettagli Calcolo Sanzione per IVAFE Non Dichiarato -->
+<h4 style="font-size: 0.8em;">Dettagli Calcolo per IVAFE Non Dichiarato</h4>
+<p style="font-size: 0.8em;"><strong>Dettaglio Calcolo Sanzione:</strong></p>
+<ul>
+    {% for dettaglio in yearly_holdings_report[tax_year].totals.penalty_due_ivafe.dettagli_calcolo_sanzione %}
+    <li style="font-size: 0.8em;">{{ dettaglio }}</li>
+    {% endfor %}
+</ul>
+<p style="font-size: 0.8em;"><strong>Dettaglio Calcolo Interessi di Mora:</strong></p>
+<ul>
+    {% for dettaglio in yearly_holdings_report[tax_year].totals.penalty_due_ivafe.dettagli_calcolo_interessi %}
+    <li style="font-size: 0.8em;">{{ dettaglio }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
 
 <pdf:nextpage />
 
@@ -246,6 +270,9 @@
         <th align="right">Imposte 26%</th>
         <th align="right">Sanzione CG Non Dichiarato</th>
         <th align="right">Sanzione (RW)</th>
+        {% if tax_year >= 2022 %}
+        <th align="right">Sanzione (IVAFE)</th>
+        {% endif %}
         <th align="right">Totale da Pagare</th>
     </tr>
     <!-- Inizializza un namespace per le somme totali -->
@@ -253,6 +280,7 @@
     total_taxes_sum=decimal.Decimal('0'),
     sanzione_cg_sum=decimal.Decimal('0'),
     sanzione_rw_sum=decimal.Decimal('0'),
+    sanzione_ivafe_sum=decimal.Decimal('0'),
     total_due_sum=decimal.Decimal('0')
     ) %}
     {% for tax_year in tax_report|sort %}
@@ -261,12 +289,18 @@
     {% set total_taxes = combined_total * decimal.Decimal('0.26') %}
     {% set sanzione_cg = tax_report[tax_year]['SanzioneImposta'].totale %}
     {% set sanzione_rw = yearly_holdings_report[tax_year].totals.penalty_due_rw.totale %}
-    {% set total_due = total_taxes + sanzione_cg + sanzione_rw %}
+    {% if tax_year >= 2022 %}
+    {% set sanzione_ivafe = yearly_holdings_report[tax_year].totals.penalty_due_ivafe.totale %}
+    {% else %}
+    {% set sanzione_ivafe = decimal.Decimal('0') %}
+    {% endif %}
+    {% set total_due = total_taxes + sanzione_cg + sanzione_rw + sanzione_ivafe %}
 
     <!-- Aggiorna le somme totali utilizzando il namespace -->
     {% set ns.total_taxes_sum = ns.total_taxes_sum + total_taxes %}
     {% set ns.sanzione_cg_sum = ns.sanzione_cg_sum + sanzione_cg %}
     {% set ns.sanzione_rw_sum = ns.sanzione_rw_sum + sanzione_rw %}
+    {% set ns.sanzione_ivafe_sum = ns.sanzione_ivafe_sum + sanzione_ivafe %}
     {% set ns.total_due_sum = ns.total_due_sum + total_due %}
 
     <tr>
@@ -274,6 +308,9 @@
         <td align="right">{{ total_taxes | valuefilter }}</td>
         <td align="right">{{ sanzione_cg | valuefilter }}</td>
         <td align="right">{{ sanzione_rw | valuefilter }}</td>
+        {% if tax_year >= 2022 %}
+        <td align="right">{{ sanzione_ivafe | valuefilter }}</td>
+        {% endif %}
         <td align="right"><strong>{{ total_due | valuefilter }}</strong></td>
     </tr>
     {% endif %}
@@ -285,7 +322,9 @@
         <td align="right"><strong>{{ ns.total_taxes_sum | valuefilter }}</strong></td>
         <td align="right"><strong>{{ ns.sanzione_cg_sum | valuefilter }}</strong></td>
         <td align="right"><strong>{{ ns.sanzione_rw_sum | valuefilter }}</strong></td>
+        {% if tax_year >= 2022 %}
+        <td align="right"><strong>{{ ns.sanzione_ivafe_sum | valuefilter }}</strong></td>
+        {% endif %}
         <td align="right"><strong>{{ ns.total_due_sum | valuefilter }}</strong></td>
     </tr>
 </table>
-
