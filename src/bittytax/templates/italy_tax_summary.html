@@ -48,7 +48,7 @@
         {% set margin = tax_report[tax_year]['MarginTrading'] %}
         {% set combined_total = tax_report[tax_year]['CombinedTotal'] %}
         {% set sanzione_imposta = tax_report[tax_year]['SanzioneImposta'] %}
-
+        {% set ImpostaDovuta = tax_report[tax_year]['ImpostaDovuta'] %}
 
 <h2 style="text-align: center;">{{ config.format_tax_year(tax_year) }}</h2>
 
