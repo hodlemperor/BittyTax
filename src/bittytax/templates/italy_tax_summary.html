@@ -167,14 +167,14 @@
     {% set end_date = dates[-1] %}
     <tr>
         <td align="left"><strong>Total</strong></td>
-        <td align="right">B{{ daily_holdings_report[tax_year][start_date]['btc_balance'] | format_decimal }}</td>
-        <td align="right">B{{ daily_holdings_report[tax_year][end_date]['btc_balance'] | format_decimal }}</td>
-        <td align="right">B{{ daily_holdings_report[tax_year]['average']['average_btc_balance'] | format_decimal }}</td>
+        <td align="right">B{{ daily_holdings_report[tax_year][start_date]['btc_balance'] | default(0) | format_decimal }}</td>
+        <td align="right">B{{ daily_holdings_report[tax_year][end_date]['btc_balance'] | default(0) | format_decimal }}</td>
+        <td align="right">B{{ daily_holdings_report[tax_year]['average']['average_btc_balance'] | default(0) | format_decimal }}</td>
         <td></td>
-        <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_start_of_year | valuefilter }}</strong></td>
-        <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_at_end_of_year | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_start_of_year | default(0) | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.total_value_in_fiat_at_end_of_year | default(0) | valuefilter }}</strong></td>
         {% if tax_year >= 2023 %}
-        <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.ivafe | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ yearly_holdings_report[tax_year].totals.ivafe | default(0) | valuefilter }}</strong></td>
         {% endif %}
     </tr>
 </table>
@@ -280,9 +280,7 @@
         <th align="right">Imposte 26%</th>
         <th align="right">Sanzione CG Non Dichiarato</th>
         <th align="right">Sanzione (RW)</th>
-        {% if tax_year >= 2022 %}
         <th align="right">Sanzione (IVAFE)</th>
-        {% endif %}
         <th align="right">Totale da Pagare</th>
     </tr>
     <!-- Inizializza un namespace per le somme totali -->
@@ -315,13 +313,13 @@
 
     <tr>
         <td align="left">{{ config.format_tax_year(tax_year) }}</td>
-        <td align="right">{{ total_taxes | valuefilter }}</td>
-        <td align="right">{{ sanzione_cg | valuefilter }}</td>
-        <td align="right">{{ sanzione_rw | valuefilter }}</td>
+        <td align="right">{{ total_taxes | default(0) | valuefilter }}</td>
+        <td align="right">{{ sanzione_cg | default(0) | valuefilter }}</td>
+        <td align="right">{{ sanzione_rw | default(0) | valuefilter }}</td>
         {% if tax_year >= 2022 %}
-        <td align="right">{{ sanzione_ivafe | valuefilter }}</td>
+        <td align="right">{{ sanzione_ivafe | default(0) | valuefilter }}</td>
         {% endif %}
-        <td align="right"><strong>{{ total_due | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ total_due | default(0) | valuefilter }}</strong></td>
     </tr>
     {% endif %}
     {% endfor %}
@@ -329,12 +327,12 @@
 <table class="total-table">
     <tr>
         <td align="left"><strong>Totale</strong></td>
-        <td align="right"><strong>{{ ns.total_taxes_sum | valuefilter }}</strong></td>
-        <td align="right"><strong>{{ ns.sanzione_cg_sum | valuefilter }}</strong></td>
-        <td align="right"><strong>{{ ns.sanzione_rw_sum | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ ns.total_taxes_sum | default(0) | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ ns.sanzione_cg_sum | default(0) | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ ns.sanzione_rw_sum | default(0) | valuefilter }}</strong></td>
         {% if tax_year >= 2022 %}
-        <td align="right"><strong>{{ ns.sanzione_ivafe_sum | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ ns.sanzione_ivafe_sum | default(0) | valuefilter }}</strong></td>
         {% endif %}
-        <td align="right"><strong>{{ ns.total_due_sum | valuefilter }}</strong></td>
+        <td align="right"><strong>{{ ns.total_due_sum | default(0) | valuefilter }}</strong></td>
     </tr>
 </table>
