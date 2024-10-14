@@ -184,19 +184,22 @@
     <tr>
         <th align="left">Tipo di Sanzione</th>
         <th align="right">Importo</th>
-        <th align="right">Interessi di Mora</th>
+        <th align="right">Interessi di Mora sull'Imposta</th>
+        <th align="right">Interessi di Mora sulla Sanzione</th>
         <th align="right">Totale</th>
     </tr>
     <tr>
         <td align="left">Capital Gain Non Dichiarato</td>
         <td align="right">{{ sanzione_imposta.sanzione | default(0) | valuefilter }}</td>
-        <td align="right">{{ sanzione_imposta.interessi_di_mora | default(0) | valuefilter }}</td>
+        <td align="right">{{ sanzione_imposta.interessi_mora_imposta | default(0) | valuefilter }}</td>
+        <td align="right">{{ sanzione_imposta.interessi_mora_sanzione | default(0) | valuefilter }}</td>
         <td align="right">{{ sanzione_imposta.totale | default(0) | valuefilter }}</td>
     </tr>
     <tr>
         <td align="left">Detenzione all'Estero Non Dichiarata (Quadro RW)</td>
         <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.sanzione | default(0) | valuefilter }}</td>
         <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.interessi_di_mora | default(0) | valuefilter }}</td>
+        <td align="right"><i>Not applicable</i></td>
         <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_rw.totale | default(0) | valuefilter }}</td>
     </tr>
     {% if tax_year >= 2022 %}
@@ -204,6 +207,7 @@
         <td align="left">IVAFE Non Dichiarato</td>
         <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_ivafe.sanzione | default(0) | valuefilter }}</td>
         <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_ivafe.interessi_di_mora | default(0) | valuefilter }}</td>
+        <td align="right"><i>Not applicable</i></td>
         <td align="right">{{ yearly_holdings_report[tax_year].totals.penalty_due_ivafe.totale | default(0) | valuefilter }}</td>
     </tr>
     {% endif %}
@@ -219,9 +223,15 @@
     <li style="font-size: 0.8em;">{{ dettaglio }}</li>
     {% endfor %}
 </ul>
-<p style="font-size: 0.8em;"><strong>Dettaglio Calcolo Interessi di Mora:</strong></p>
+<p style="font-size: 0.8em;"><strong>Dettaglio Calcolo Interessi di Mora sull'Imposta:</strong></p>
 <ul>
-    {% for dettaglio in sanzione_imposta.dettagli_calcolo_interessi %}
+    {% for dettaglio in sanzione_imposta.dettagli_calcolo_interessi_imposta %}
+    <li style="font-size: 0.8em;">{{ dettaglio }}</li>
+    {% endfor %}
+</ul>
+<p style="font-size: 0.8em;"><strong>Dettaglio Calcolo Interessi di Mora sulla Sanzione:</strong></p>
+<ul>
+    {% for dettaglio in sanzione_imposta.dettagli_calcolo_interessi_sanzione %}
     <li style="font-size: 0.8em;">{{ dettaglio }}</li>
     {% endfor %}
 </ul>
