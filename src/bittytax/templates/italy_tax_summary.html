@@ -310,7 +310,8 @@
     {% for tax_year in tax_report|sort %}
     {% if tax_year in yearly_holdings_report %}
     {% set combined_total = tax_report[tax_year]['CombinedTotal'] %}
-    {% set total_taxes = (combined_total * decimal.Decimal('0.26')) if (combined_total * decimal.Decimal('0.26')) >= 0 else decimal.Decimal('0') %}
+    {% set display_taxes = combined_total * decimal.Decimal('0.26') %}
+    {% set total_taxes = display_taxes if display_taxes >= 0 else decimal.Decimal('0') %}
     {% set ivafe = yearly_holdings_report[tax_year].totals.penalty_due_ivafe.ivafe | default(decimal.Decimal('0')) %}
     {% set sanzione_cg = tax_report[tax_year]['SanzioneImposta'].totale %}
     {% set sanzione_rw = yearly_holdings_report[tax_year].totals.penalty_due_rw.totale %}
@@ -331,7 +332,7 @@
 
     <tr>
         <td align="left">{{ config.format_tax_year(tax_year) }}</td>
-        <td align="right">{{ total_taxes | default(0) | valuefilter }}</td>
+        <td align="right">{{ display_taxes | valuefilter }}</td>
         <td align="right">{{ ivafe | default(0) | valuefilter }}</td>
         <td align="right">{{ sanzione_cg | default(0) | valuefilter }}</td>
         <td align="right">{{ sanzione_rw | default(0) | valuefilter }}</td>
@@ -360,3 +361,6 @@
         </td>
     </tr>
 </table>
+
+<!-- Nota esplicativa per le imposte negative -->
+<p><small>Nota: Le imposte negative sono mostrate a titolo informativo, ma non vengono incluse nel totale da pagare e nel totale delle imposte, dove sono considerate come valore zero. Infatti minusvalenze sono valide solo per i 4 anni successivi e dal 2022 in poi ma il calcolo va fatto a mano.</small></p>
