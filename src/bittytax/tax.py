@@ -1087,6 +1087,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         paese_black_list: bool,
         data_pagamento: date = None,
     ) -> dict:
+        if data_pagamento is None:
+            data_pagamento = datetime.now().date()
 
         # Se la data di scadenza è maggiore della data di pagamento, restituisci tutti i valori a zero
         if data_scadenza > data_pagamento:
@@ -1112,8 +1114,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 'dettagli_calcolo_interessi': [],
                 'dettagli_calcolo_sanzione': []
             }
-        if data_pagamento is None:
-            data_pagamento = datetime.now().date()
 
         giorni_ritardo = max((data_pagamento - data_scadenza).days, 0)
         dettagli_calcolo_sanzione = []
