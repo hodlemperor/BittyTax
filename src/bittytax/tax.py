@@ -1021,6 +1021,19 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         if data_pagamento is None:
             data_pagamento = datetime.now().date()
 
+        # Verifica se la data di scadenza è maggiore della data di pagamento
+        if data_scadenza > data_pagamento:
+            return {
+                'imposta': Decimal('0.00'),
+                'sanzione': Decimal('0.00'),
+                'interessi_mora_imposta': Decimal('0.00'),
+                'interessi_mora_sanzione': Decimal('0.00'),
+                'totale': Decimal('0.00'),
+                'dettagli_calcolo_interessi_imposta': [],
+                'dettagli_calcolo_interessi_sanzione': [],
+                'dettagli_calcolo_sanzione': []
+            }
+
         giorni_ritardo = max((data_pagamento - data_scadenza).days, 0)
         dettagli_calcolo_sanzione = []
 
@@ -1074,6 +1087,19 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         paese_black_list: bool,
         data_pagamento: date = None,
     ) -> dict:
+
+        # Se la data di scadenza è maggiore della data di pagamento, restituisci tutti i valori a zero
+        if data_scadenza > data_pagamento:
+            return {
+                'ivafe': Decimal('0.00'),
+                'sanzione': Decimal('0.00'),
+                'interessi_mora_ivafe': Decimal('0.00'),
+                'interessi_mora_sanzione': Decimal('0.00'),
+                'totale': Decimal('0.00'),
+                'dettagli_calcolo_interessi': [],
+                'dettagli_calcolo_sanzione': []
+            }
+
         if not isinstance(ivafe, Decimal):
             raise TypeError(f"Expected ivafe to be of type Decimal, but got {type(ivafe)}")
         if ivafe <= 0:
@@ -1141,6 +1167,21 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         paese_black_list: bool,
         data_pagamento: date = None,
     ) -> dict:
+        # Verifica che data_pagamento sia impostata, altrimenti usa la data odierna
+        if data_pagamento is None:
+            data_pagamento = datetime.now().date()
+    
+        # Se la data di scadenza è maggiore della data di pagamento, restituisci tutto a zero
+        if data_scadenza > data_pagamento:
+            return {
+                'valore_attivita_estere': Decimal('0.00'),
+                'sanzione': Decimal('0.00'),
+                'interessi_di_mora': Decimal('0.00'),
+                'totale': Decimal('0.00'),
+                'dettagli_calcolo_interessi': [],
+                'dettagli_calcolo_sanzione': []
+            }
+
         if not isinstance(valore_attivita_estere, Decimal):
             raise TypeError(f"Expected valore_attivita_estere to be of type Decimal, but got {type(valore_attivita_estere)}")
         if valore_attivita_estere <= 0:
@@ -1152,8 +1193,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 'dettagli_calcolo_interessi': [],
                 'dettagli_calcolo_sanzione': []
             }
-        if data_pagamento is None:
-            data_pagamento = datetime.now().date()
 
         giorni_ritardo = max((data_pagamento - data_scadenza).days, 0)
         dettagli_calcolo_sanzione = []
